@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090d18">
+    <title>Browse devices | Aegis Market</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="behavior-sdk.js" defer></script>
+    <script src="adaptive-response.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body data-monitor-page="products" data-adaptive-guard>
+    <header class="site-header">
+      <a class="brand" href="index.html" data-monitor-action="nav.home"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="products.html" aria-current="page" data-monitor-action="nav.products">Marketplace</a>
+        <a href="dashboard.html" data-monitor-action="nav.dashboard">Dashboard</a>
+      </nav>
+      <div class="header-actions"><a class="cart-link" href="products.html#catalog" data-monitor-action="nav.cart">Lab kit <span id="cart-count" class="cart-count">0</span></a><a class="button button-small button-outline" href="login.html" data-monitor-action="nav.sign_in">Sign in</a><button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">Menu</button></div>
+    </header>
+    <div class="monitor-notice" role="status"><span class="live-dot"></span><span data-monitor-notice-copy>Behavior monitoring is active for this demo. We measure action counts and timing only; typed and sensitive form values are never collected.</span><span class="monitor-state" data-sdk-status>Connecting</span></div>
+    <main>
+      <section class="page-heading container">
+        <p class="eyebrow">AEGIS DEVICE MARKETPLACE / 06 ITEMS</p>
+        <h1>Tools for a <span>safer edge.</span></h1>
+        <p>Explore field-ready hardware for your digital perimeter. Add items to your demo lab kit to generate test activity.</p>
+      </section>
+      <section class="catalog container" id="catalog" aria-labelledby="catalog-title">
+        <div class="catalog-toolbar"><div><p class="eyebrow">CURATED HARDWARE</p><h2 id="catalog-title">The collection</h2></div><label class="search-box"><span class="search-icon" aria-hidden="true">⌕</span><span class="sr-only">Search products</span><input id="product-search" type="search" placeholder="Search devices..." autocomplete="off"><kbd>/</kbd></label></div>
+        <p class="search-result" id="search-result" aria-live="polite">Showing all 6 devices</p>
+        <div class="product-grid" id="product-grid">
+          <article class="product-card" data-product-card data-search="edge gateway network router">
+            <div class="product-image image-gateway"><img src="https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=760&q=82" alt="Compact network router on a desk" loading="lazy"><span class="product-tag">NETWORK</span></div>
+            <div class="product-info"><div class="product-meta"><span>01 / GATEWAY</span><span>AE-110</span></div><h3>Edge Gateway</h3><p>Segment traffic at the perimeter with a quiet, capable edge router.</p><div class="product-buy"><strong>$189</strong><button class="button button-small button-primary" type="button" data-add-product data-monitor-action="cart.add.gateway">Add to lab <span aria-hidden="true">+</span></button></div></div>
+          </article>
+          <article class="product-card" data-product-card data-search="hardware security key identity authentication">
+            <div class="product-image image-key"><img src="https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=760&q=82" alt="Security key and access device" loading="lazy"><span class="product-tag">IDENTITY</span></div>
+            <div class="product-info"><div class="product-meta"><span>02 / IDENTITY</span><span>AE-204</span></div><h3>Hardware Key</h3><p>Keep account access anchored to a physical, phishing-resistant key.</p><div class="product-buy"><strong>$54</strong><button class="button button-small button-primary" type="button" data-add-product data-monitor-action="cart.add.key">Add to lab <span aria-hidden="true">+</span></button></div></div>
+          </article>
+          <article class="product-card" data-product-card data-search="encrypted portable drive storage">
+            <div class="product-image image-drive"><img src="https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=760&q=82" alt="Portable solid state storage device" loading="lazy"><span class="product-tag">STORAGE</span></div>
+            <div class="product-info"><div class="product-meta"><span>03 / STORAGE</span><span>AE-315</span></div><h3>Vault Drive</h3><p>Take sensitive working files offline in a portable encrypted vault.</p><div class="product-buy"><strong>$129</strong><button class="button button-small button-primary" type="button" data-add-product data-monitor-action="cart.add.drive">Add to lab <span aria-hidden="true">+</span></button></div></div>
+          </article>
+          <article class="product-card" data-product-card data-search="privacy webcam camera cover">
+            <div class="product-image image-camera"><img src="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=760&q=82" alt="Laptop used for privacy-conscious work" loading="lazy"><span class="product-tag">PRIVACY</span></div>
+            <div class="product-info"><div class="product-meta"><span>04 / PRIVACY</span><span>AE-402</span></div><h3>Privacy Shutter</h3><p>A simple physical boundary for cameras when the meeting is over.</p><div class="product-buy"><strong>$18</strong><button class="button button-small button-primary" type="button" data-add-product data-monitor-action="cart.add.shutter">Add to lab <span aria-hidden="true">+</span></button></div></div>
+          </article>
+          <article class="product-card" data-product-card data-search="portable wifi travel access point">
+            <div class="product-image image-node"><img src="https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=760&q=82" alt="Wireless network access point" loading="lazy"><span class="product-tag">NETWORK</span></div>
+            <div class="product-info"><div class="product-meta"><span>05 / CONNECTIVITY</span><span>AE-508</span></div><h3>Field Node</h3><p>Bring a private, managed wireless network along for the field.</p><div class="product-buy"><strong>$92</strong><button class="button button-small button-primary" type="button" data-add-product data-monitor-action="cart.add.node">Add to lab <span aria-hidden="true">+</span></button></div></div>
+          </article>
+          <article class="product-card" data-product-card data-search="encrypted power backup battery">
+            <div class="product-image image-power"><img src="https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?auto=format&fit=crop&w=760&q=82" alt="Portable power bank for travel" loading="lazy"><span class="product-tag">POWER</span></div>
+            <div class="product-info"><div class="product-meta"><span>06 / CONTINUITY</span><span>AE-619</span></div><h3>Continuity Pack</h3><p>Keep your field kit online and ready through a long working day.</p><div class="product-buy"><strong>$76</strong><button class="button button-small button-primary" type="button" data-add-product data-monitor-action="cart.add.power">Add to lab <span aria-hidden="true">+</span></button></div></div>
+          </article>
+        </div>
+        <p class="empty-state" id="empty-state" hidden>No devices match that search. Try another term.</p>
+      </section>
+    </main>
+    <footer class="site-footer container"><a class="brand" href="index.html"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a><span>LOCAL DEMO / NO CHECKOUT OR PAYMENT DATA</span><a href="dashboard.html" data-monitor-action="footer.dashboard">Open activity dashboard ↗</a></footer>
+  </body>
+</html>

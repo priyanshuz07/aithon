@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090d18">
+    <title>Sign in | Aegis Lab</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="behavior-sdk.js" defer></script>
+    <script src="adaptive-response.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body data-monitor-page="login" data-adaptive-guard>
+    <header class="site-header">
+      <a class="brand" href="index.html" data-monitor-action="nav.home"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a>
+      <nav class="main-nav" aria-label="Main navigation"><a href="products.html" data-monitor-action="nav.products">Marketplace</a><a href="dashboard.html" data-monitor-action="nav.dashboard">Dashboard</a></nav>
+      <div class="header-actions"><a class="button button-small button-outline" href="login.html" aria-current="page" data-monitor-action="nav.sign_in">Sign in</a><button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">Menu</button></div>
+    </header>
+    <div class="monitor-notice" role="status"><span class="live-dot"></span><span data-monitor-notice-copy>Behavior monitoring is active for this demo. We measure action counts and timing only; typed and sensitive form values are never collected.</span><span class="monitor-state" data-sdk-status>Connecting</span></div>
+    <main class="login-layout container">
+      <section class="login-aside"><p class="eyebrow">AEGIS / SECURE ACCESS</p><h1>Access your<br><span>command view.</span></h1><p>Sign-in is a local interaction demo. No credentials are sent to any server.</p><div class="aside-rule"><span>01</span><span>Privacy-first session telemetry</span></div><div class="aside-rule"><span>02</span><span>Events stay on your local API</span></div></section>
+      <section class="login-panel" aria-labelledby="login-title"><div class="panel-kicker"><span class="live-dot"></span> DEMO ACCESS</div><h2 id="login-title">Welcome back</h2><p class="muted">Use any values to generate a form-submit event.</p><form id="demo-login" data-demo-form data-monitor-action="form.login">
+        <label for="login-email">Email address</label><input id="login-email" name="email" type="email" autocomplete="username" placeholder="operator@example.test" required>
+        <label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Enter any demo value" required>
+        <button class="button button-primary button-wide" type="submit" data-monitor-action="login.submit">Continue to demo <span aria-hidden="true">→</span></button>
+      </form><p class="form-feedback" id="login-feedback" role="status" aria-live="polite"></p><p class="privacy-note">This demo does not transmit or retain the values entered above.</p></section>
+    </main>
+    <footer class="site-footer container"><a class="brand" href="index.html"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a><span>LOCAL DEMO / CREDENTIALS NEVER SENT</span><a href="dashboard.html" data-monitor-action="footer.dashboard">Open dashboard ↗</a></footer>
+  </body>
+</html>

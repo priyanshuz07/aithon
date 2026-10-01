@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090d18">
+    <title>Security dashboard | Aegis Lab</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="behavior-sdk.js" defer></script>
+    <script src="node_modules/chart.js/dist/chart.umd.js" defer></script>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+    <script src="app.js" defer></script>
+    <script src="dashboard.js" defer></script>
+  </head>
+  <body data-monitor-page="dashboard">
+    <header class="site-header">
+      <a class="brand" href="index.html" data-monitor-action="nav.home"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a>
+      <nav class="main-nav" aria-label="Main navigation"><a href="products.html" data-monitor-action="nav.products">Marketplace</a><a href="dashboard.html" aria-current="page" data-monitor-action="nav.dashboard">Security console</a></nav>
+      <div class="header-actions"><a class="button button-small button-outline" href="login.html" data-monitor-action="nav.sign_in">Sign in</a><button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">Menu</button></div>
+    </header>
+    <div class="monitor-notice" role="status"><span class="live-dot"></span><span data-monitor-notice-copy>Behavior monitoring is active for this demo. We measure action counts and timing only; typed and sensitive form values are never collected.</span><span class="monitor-state" data-sdk-status>Connecting</span></div>
+    <div class="dashboard-layout">
+      <aside class="dashboard-sidebar" aria-label="Dashboard sections">
+        <div class="sidebar-label">SECURITY OPERATIONS</div>
+        <nav class="dashboard-nav">
+          <a href="#overview" class="is-active"><i data-lucide="layout-dashboard"></i><span>Overview</span></a>
+          <a href="#traffic"><i data-lucide="chart-no-axes-combined"></i><span>Traffic analytics</span></a>
+          <a href="#sessions"><i data-lucide="activity"></i><span>Live sessions</span><span class="nav-count" id="nav-session-count">0</span></a>
+          <a href="#alerts"><i data-lucide="bell-ring"></i><span>Alerts</span><span class="nav-count nav-alert-count" id="nav-alert-count">0</span></a>
+          <a href="#model"><i data-lucide="cpu"></i><span>Model status</span></a>
+          <a href="#demo-lab"><i data-lucide="flask-conical"></i><span>Scenario lab</span></a>
+        </nav>
+        <div class="sidebar-bottom"><span class="sidebar-pulse"></span><div><strong id="sidebar-api-state">CONNECTING</strong><span>Local API connection</span></div></div>
+      </aside>
+      <main class="dashboard-main" id="overview">
+        <div class="dashboard-topline">
+          <div><p class="eyebrow">AEGIS / SECURITY OBSERVABILITY</p><h1>Firewall <span>console</span></h1><p class="dashboard-subtitle">Session risk, adaptive decisions, and behavioral traffic in one view.</p></div>
+          <div class="dashboard-controls">
+            <label class="refresh-control"><span>Refresh</span><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">60 seconds</option><option value="0">Off</option></select></label>
+            <span id="refresh-state" class="refresh-state">Auto refresh every 15s</span>
+            <button id="refresh-dashboard" class="icon-button refresh-button" type="button" title="Refresh dashboard" aria-label="Refresh dashboard"><i data-lucide="refresh-cw"></i></button>
+          </div>
+        </div>
+        <div id="dashboard-loading" class="dashboard-state loading-state">Loading persisted security data...</div>
+        <div id="dashboard-error" class="dashboard-state error-state" role="alert" hidden></div>
+        <div id="dashboard-content" hidden>
+          <section class="overview-section" aria-label="Overview metrics">
+            <div class="overview-heading"><div class="live-heading"><span class="live-dot"></span><span>LIVE OVERVIEW</span></div><div class="overview-status"><span id="api-state" class="status-pill is-online">CONNECTING</span><span id="last-updated">Awaiting data</span></div></div>
+            <div class="overview-grid">
+              <article class="overview-card overview-total"><span>Total sessions</span><strong id="overview-total">--</strong><small>All recorded sessions</small><i data-lucide="users"></i></article>
+              <article class="overview-card"><span>Normal</span><strong id="overview-normal">--</strong><small>Estimated routine behavior</small><i data-lucide="shield-check"></i></article>
+              <article class="overview-card accent-amber"><span>Suspicious</span><strong id="overview-suspicious">--</strong><small>Medium risk and above</small><i data-lucide="scan-eye"></i></article>
+              <article class="overview-card accent-orange"><span>High risk</span><strong id="overview-high-risk">--</strong><small>High and critical</small><i data-lucide="shield-alert"></i></article>
+              <article class="overview-card accent-red"><span>Blocked</span><strong id="overview-blocked">--</strong><small>Recorded block decisions</small><i data-lucide="ban"></i></article>
+              <article class="overview-card accent-blue"><span>Active sessions</span><strong id="overview-active">--</strong><small>Seen in the last 5 minutes</small><i data-lucide="radio-tower"></i></article>
+            </div>
+            <div class="monitoring-line"><span class="monitoring-ring"></span><span id="monitoring-copy">Checking API and database</span><span id="last-activity">No recorded activity</span></div>
+          </section>
+
+          <section class="dashboard-section" id="traffic">
+            <div class="section-title-row"><div><p class="eyebrow">TRAFFIC ANALYTICS / LAST 24 HOURS</p><h2>Behavior over time</h2></div><span class="section-meta">LIVE DATABASE</span></div>
+            <div class="analytics-grid">
+              <article class="chart-panel chart-panel-wide"><div class="chart-heading"><div><h3>Normal vs suspicious sessions</h3><p>Hourly session starts based on latest stored risk assessment</p></div><span class="chart-live-mark">24H</span></div><div class="chart-canvas"><canvas id="sessions-chart" aria-label="Sessions over time, normal versus suspicious" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable. Session data is still shown in the table.</p></div></article>
+              <article class="chart-panel"><div class="chart-heading"><div><h3>Risk levels</h3><p>Latest assessment per session</p></div></div><div class="chart-canvas chart-canvas-doughnut"><canvas id="risk-chart" aria-label="Risk level distribution" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
+              <article class="chart-panel"><div class="chart-heading"><div><h3>Adaptive responses</h3><p>Latest recorded response per session</p></div></div><div class="chart-canvas chart-canvas-doughnut"><canvas id="response-chart" aria-label="Adaptive response distribution" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
+            </div>
+          </section>
+
+          <section class="dashboard-section" id="sessions">
+            <div class="section-title-row"><div><p class="eyebrow">SESSION OBSERVABILITY</p><h2>Live session monitor</h2></div><span id="session-count-label" class="section-meta">Loading sessions</span></div>
+            <div class="table-toolbar"><label class="session-search"><i data-lucide="search"></i><input id="session-search" type="search" placeholder="Search ID or category" aria-label="Search sessions"></label><span class="table-note">Select a row for stored session details</span></div>
+            <div class="table-scroll"><table class="session-table"><thead><tr><th>Session ID</th><th>Started</th><th>Clicks</th><th>Request rate</th><th>Risk score</th><th>Estimated pattern</th><th>Risk</th><th>Response</th></tr></thead><tbody id="session-table-body"><tr><td colspan="8" class="table-empty">Loading persisted sessions...</td></tr></tbody></table></div>
+          </section>
+
+          <section class="dashboard-section alerts-section" id="alerts">
+            <div class="section-title-row"><div><p class="eyebrow">TRIAGE / RULE-BASED SIGNALS</p><h2>Alert center</h2></div><span class="section-meta">MEDIUM RISK AND ABOVE</span></div>
+            <div class="filter-toolbar">
+              <label><span>Risk level</span><select id="filter-risk"><option value="">All levels</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option><option value="low">Low</option><option value="not_analyzed">Not analyzed</option></select></label>
+              <label><span>Response</span><select id="filter-response"><option value="">All responses</option><option value="allow">Allow</option><option value="challenge">Challenge</option><option value="delay">Delay</option><option value="block">Block</option><option value="not_analyzed">Not analyzed</option></select></label>
+              <label><span>From</span><input id="filter-from" type="date"></label>
+              <label><span>To</span><input id="filter-to" type="date"></label>
+              <button id="clear-filters" class="clear-filters" type="button">Clear filters</button>
+            </div>
+            <div id="alert-list" class="alert-list"><div class="loading-state">Loading alerts...</div></div>
+          </section>
+
+          <section class="dashboard-section model-section" id="model">
+            <div class="section-title-row"><div><p class="eyebrow">MODEL REGISTRY</p><h2>Model status</h2></div><span class="section-meta">BACKEND REPORTED</span></div>
+            <div class="model-panel">
+              <div class="model-emblem" id="model-indicator"><i data-lucide="brain-circuit"></i></div>
+              <div class="model-primary"><span>Machine-learning model</span><strong id="model-type">Checking model registry</strong><small id="model-training">No training status reported</small></div>
+              <span id="model-loaded" class="status-pill is-offline">UNKNOWN</span>
+              <div class="model-facts"><div><span>Training dataset</span><strong id="model-dataset">Not reported</strong></div><div><span>Evaluation metrics</span><strong id="model-metrics">No evaluation metrics reported</strong></div></div>
+              <p class="model-note" id="model-note">Optional synthetic-data classifier. Synthetic evaluation metrics do not establish real-world accuracy.</p>
+            </div>
+          </section>
+
+          <section class="dashboard-section demo-lab-section" id="demo-lab">
+            <div class="section-title-row"><div><p class="eyebrow">AITHON 2.0 / SYNTHETIC TRAFFIC ONLY</p><h2>Scenario lab</h2></div><span class="section-meta">SERVER-GENERATED PROFILES</span></div>
+            <p class="demo-lab-copy">Create isolated synthetic sessions to demonstrate the response policy. No real user data is used.</p>
+            <div class="demo-scenario-grid">
+              <button class="demo-scenario-button" type="button" data-demo-scenario="normal"><i data-lucide="user-round"></i><span><strong>A / Normal user</strong><small>Routine browsing · expected allow</small></span><b>RUN</b></button>
+              <button class="demo-scenario-button" type="button" data-demo-scenario="automated"><i data-lucide="scan-search"></i><span><strong>B / Scraping-like</strong><small>Page and request burst · expected challenge</small></span><b>RUN</b></button>
+              <button class="demo-scenario-button" type="button" data-demo-scenario="high_frequency"><i data-lucide="activity"></i><span><strong>C / High frequency</strong><small>Rapid repeated activity · expected delay</small></span><b>RUN</b></button>
+              <button class="demo-scenario-button" type="button" data-demo-scenario="critical"><i data-lucide="shield-alert"></i><span><strong>D / Critical simulation</strong><small>Combined strong signals · expected block</small></span><b>RUN</b></button>
+            </div>
+            <div id="demo-scenario-result" class="demo-scenario-result" role="status" aria-live="polite"><p>Select a scenario to create and inspect a synthetic session.</p></div>
+          </section>
+
+          <details class="telemetry-tools">
+            <summary><span><i data-lucide="wrench"></i> Browser telemetry and demo controls</span><span class="section-meta">EXISTING SDK</span></summary>
+            <div class="telemetry-body">
+              <div class="connection-strip"><div class="connection-status"><span class="status-orb pending" id="api-orb"></span><div><strong id="api-label">Checking API</strong><span id="api-detail">Connecting to local service...</span></div></div><div class="session-token"><span>ANONYMOUS SESSION</span><code id="session-id">Generating</code></div></div>
+              <section class="metrics-grid" aria-label="Current browser tab metrics">
+                <article class="metric-card metric-featured"><span class="metric-label">Page visits</span><strong class="metric-value" id="metric-page-visits">0</strong><span class="metric-caption">This browser session</span></article>
+                <article class="metric-card"><span class="metric-label">Control clicks</span><strong class="metric-value" id="metric-clicks">0</strong><span class="metric-caption">No text or field values</span></article>
+                <article class="metric-card"><span class="metric-label">Form submissions</span><strong class="metric-value" id="metric-forms">0</strong><span class="metric-caption">Submission count only</span></article>
+                <article class="metric-card"><span class="metric-label">Repeated actions</span><strong class="metric-value" id="metric-repeats">0</strong><span class="metric-caption">Same control used again</span></article>
+                <article class="metric-card"><span class="metric-label">Avg. click interval</span><strong class="metric-value" id="metric-interval">0<span class="metric-unit">ms</span></strong><span class="metric-caption">Between consecutive clicks</span></article>
+                <article class="metric-card"><span class="metric-label">Time on page</span><strong class="metric-value" id="metric-page-time">0<span class="metric-unit">s</span></strong><span class="metric-caption">Session <span id="metric-session-time">0</span>s</span></article>
+                <article class="metric-card"><span class="metric-label">Request frequency</span><strong class="metric-value" id="metric-requests">0</strong><span class="metric-caption">Observed fetch / XHR per minute</span></article>
+                <article class="metric-card"><span class="metric-label">Queued events</span><strong class="metric-value" id="metric-queued">0</strong><span class="metric-caption">Batched for API delivery</span></article>
+              </section>
+              <div class="activity-grid">
+                <div class="activity-panel"><div class="panel-heading"><div><p class="eyebrow">GENERATE SAMPLE SIGNAL</p><h2>Demo interactions</h2></div></div><p class="muted">The collector sends privacy-safe event identifiers and aggregate counts.</p><div class="activity-actions"><a class="button button-outline" href="products.html" data-monitor-action="dashboard.browse">Browse products</a><button id="demo-click" class="button button-outline" type="button" data-monitor-action="demo.repeatable">Repeatable click</button><button id="flush-events" class="button button-primary" type="button" data-monitor-action="dashboard.flush">Flush events <i data-lucide="send"></i></button></div><form id="activity-form" data-demo-form data-monitor-action="form.activity"><label for="activity-email">Test form submission</label><div class="inline-form"><input id="activity-email" name="email" type="email" placeholder="operator@example.test" required><button class="button button-primary" type="submit" data-monitor-action="activity.submit">Submit demo form</button></div></form><p class="form-feedback" id="activity-feedback" role="status" aria-live="polite"></p></div>
+                <aside class="activity-panel feed-panel"><div class="panel-heading"><div><p class="eyebrow">TRANSMISSION</p><h2>Collector status</h2></div><span class="status-pill" id="collector-status">STARTING</span></div><div class="feed-row"><span class="feed-marker"></span><div><strong>Client session</strong><span>Random ID stored in session storage</span></div></div><div class="feed-row"><span class="feed-marker"></span><div><strong>Event transport</strong><span>JSON batches to the local REST API</span></div></div><div class="feed-row"><span class="feed-marker"></span><div><strong>Data boundary</strong><span>No passwords, typed text, payment fields, or keystrokes</span></div></div><button id="disable-monitoring" class="text-button" type="button" data-monitor-action="monitor.disable">Disable monitoring for this page</button></aside>
+              </div>
+            </div>
+          </details>
+        </div>
+      </main>
+    </div>
+    <dialog id="session-dialog" class="session-dialog" aria-labelledby="session-dialog-title"><div class="dialog-toolbar"><span id="session-dialog-title" class="eyebrow">SESSION INVESTIGATION</span><button id="close-session-dialog" class="icon-button" type="button" aria-label="Close session details"><i data-lucide="x"></i></button></div><div id="session-detail-content"></div></dialog>
+    <footer class="site-footer container"><a class="brand" href="index.html"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a><span>LOCAL DEMO / PRIVACY-FIRST TELEMETRY</span><a href="http://127.0.0.1:8000/docs" target="_blank" rel="noreferrer" data-monitor-action="footer.api_docs">API documentation ↗</a></footer>
+  </body>
+</html>

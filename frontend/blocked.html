@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090d18">
+    <title>Access review | Aegis Lab</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a>
+      <a class="text-link" href="dashboard.html">Security dashboard</a>
+    </header>
+    <main class="blocked-main">
+      <section class="blocked-panel" aria-labelledby="blocked-title">
+        <div class="blocked-mark" aria-hidden="true"><i data-lucide="shield-x"></i></div>
+        <p class="eyebrow">AEGIS / ACCESS REVIEW</p>
+        <h1 id="blocked-title">Request <span>blocked</span></h1>
+        <p class="blocked-copy">This demo request was stopped by the session response policy. The local demo interface is restricted; this is not a network-level firewall block.</p>
+        <div class="blocked-reason"><span>Reason</span><p id="blocked-reason">Loading the recorded explanation...</p></div>
+        <div class="blocked-request"><span>REQUEST ID</span><code id="blocked-request-id">Loading</code></div>
+        <div class="blocked-actions"><a class="button button-outline" href="index.html">Return to home</a><a class="button button-primary" href="dashboard.html">Review session</a></div>
+        <p id="blocked-error" class="blocked-error" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+        const requestId = new URLSearchParams(window.location.search).get("request_id") || "";
+        document.querySelector("#blocked-request-id").textContent = requestId || "Not available";
+        if (window.lucide) window.lucide.createIcons();
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
+          document.querySelector("#blocked-reason").textContent = "No valid request reference was provided.";
+          return;
+        }
+        fetch("http://127.0.0.1:8000/api/decision/" + encodeURIComponent(requestId))
+          .then(function (response) {
+            if (!response.ok) throw new Error("The recorded decision is unavailable.");
+            return response.json();
+          })
+          .then(function (decision) {
+            document.querySelector("#blocked-reason").textContent = decision.reason;
+            document.querySelector("#blocked-request-id").textContent = decision.request_id;
+          })
+          .catch(function () {
+            document.querySelector("#blocked-reason").textContent = "The recorded explanation could not be loaded.";
+            document.querySelector("#blocked-error").textContent = "The decision record may have expired or the local API is unavailable.";
+          });
+      })();
+    </script>
+  </body>
+</html>

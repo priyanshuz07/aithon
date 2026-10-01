@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#090d18">
+    <title>Aegis Lab | AI Behavior Firewall 2.0</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="behavior-sdk.js" defer></script>
+    <script src="adaptive-response.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body data-monitor-page="home" data-adaptive-guard data-adaptive-public>
+    <header class="site-header">
+      <a class="brand" href="index.html" data-monitor-action="nav.home"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="products.html" data-monitor-action="nav.products">Marketplace</a>
+        <a href="dashboard.html" data-monitor-action="nav.dashboard">Dashboard</a>
+      </nav>
+      <div class="header-actions"><a class="button button-small button-outline" href="login.html" data-monitor-action="nav.sign_in">Sign in</a><button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">Menu</button></div>
+    </header>
+    <div class="monitor-notice" role="status"><span class="live-dot"></span><span data-monitor-notice-copy>Behavior monitoring is active for this demo. We measure action counts and timing only; typed and sensitive form values are never collected.</span><span class="monitor-state" data-sdk-status>Connecting</span></div>
+    <main>
+      <section class="hero container">
+        <div class="hero-copy"><p class="eyebrow">AI BEHAVIOR FIREWALL / 02</p><h1>Trust the signal.<br><span>Stop the swarm.</span></h1><p class="hero-lede">An application-aware defense layer that reads behavior, not identity. Watch a privacy-first session telemetry demo in action.</p><div class="hero-actions"><a class="button button-primary" href="products.html" data-monitor-action="hero.browse">Explore the marketplace <span aria-hidden="true">→</span></a><a class="button button-quiet" href="dashboard.html" data-monitor-action="hero.dashboard">View live activity <span aria-hidden="true">↗</span></a></div><div class="hero-proof"><span><i class="proof-check">✓</i> Local-only event API</span><span><i class="proof-check">✓</i> No keystroke capture</span></div></div>
+        <div class="signal-visual" aria-label="Illustration of activity signals passing through a behavior firewall"><div class="signal-grid"></div><div class="signal-ring ring-one"></div><div class="signal-ring ring-two"></div><div class="signal-core"><span class="core-mark">A</span><span>BEHAVIOR<br>FIREWALL</span></div><div class="signal-node node-a"><span></span>SESSION / 08:41</div><div class="signal-node node-b"><span></span>REQUEST / 02:16</div><div class="signal-node node-c"><span></span>POLICY / ALLOW</div><div class="signal-connector connector-a"></div><div class="signal-connector connector-b"></div><div class="visual-caption"><span>LIVE SIGNAL MAP</span><span><i class="live-dot"></i> LOCAL DEMO</span></div></div>
+      </section>
+      <section class="home-status container"><div><p class="eyebrow">LOCAL API</p><h2>Firewall service</h2><p class="muted" id="home-api-detail">Checking the backend connection...</p></div><div class="api-status"><span class="status-orb pending" id="home-api-orb"></span><strong id="home-api-label">Checking</strong></div><a class="text-link" href="http://127.0.0.1:8000/docs" target="_blank" rel="noreferrer" data-monitor-action="home.api_docs">Open API docs ↗</a></section>
+      <section class="feature-band"><div class="container feature-inner"><div><p class="eyebrow">BUILT FOR THE EDGE</p><h2>Behavior is a better<br><span>security signal.</span></h2></div><p>Explore the demo store, submit a safe test form, then inspect the aggregated counters on your dashboard. No passwords, typed text, or payment fields are sent to the collector.</p><a class="button button-outline" href="dashboard.html" data-monitor-action="feature.dashboard">Open session dashboard <span aria-hidden="true">↗</span></a></div></section>
+      <section class="home-products container"><div class="section-heading"><div><p class="eyebrow">THE AEGIS COLLECTION</p><h2>Field gear for a safer edge.</h2></div><a class="text-link" href="products.html" data-monitor-action="home.all_products">Browse all devices ↗</a></div><div class="featured-line"><span class="featured-number">01</span><div><strong>Edge Gateway</strong><span>Network perimeter / AE-110</span></div><span class="featured-price">$189</span><a href="products.html" aria-label="Browse Edge Gateway" data-monitor-action="home.product_gateway">View item ↗</a></div><div class="featured-line"><span class="featured-number">02</span><div><strong>Hardware Key</strong><span>Phishing-resistant identity / AE-204</span></div><span class="featured-price">$54</span><a href="products.html" aria-label="Browse Hardware Key" data-monitor-action="home.product_key">View item ↗</a></div></section>
+    </main>
+    <footer class="site-footer container"><a class="brand" href="index.html"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a><span>LOCAL DEMO / PRIVACY-FIRST TELEMETRY</span><a href="dashboard.html" data-monitor-action="footer.dashboard">Session activity ↗</a></footer>
+  </body>
+</html>
