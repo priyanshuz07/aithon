@@ -65,7 +65,7 @@ At startup the service creates/migrates SQLite tables, then purges sessions olde
 
 ## Deploy on Vercel
 
-The root `pyproject.toml` points Vercel at `backend.app.main:app`. The FastAPI app serves the existing `frontend/` directory, and browser API calls use same-origin `/api` paths on Vercel. Local static development keeps using `127.0.0.1:8000` through `frontend/api-config.js`.
+The root `main.py` exposes the existing `backend/app/main.py` app using Vercel's default Python entrypoint convention without shadowing the backend's `app` package. With the tool-only `pyproject.toml` removed, Vercel installs the single dependency list from the root `requirements.txt` rather than trying to lock an incomplete project file. The FastAPI app serves the existing `frontend/` directory, and browser API calls use same-origin `/api` paths on Vercel. Local static development keeps using `127.0.0.1:8000` through `frontend/api-config.js`.
 
 1. Import this repository in Vercel and keep the project Root Directory at the repository root. Do not set it to `backend/` or `frontend/`.
 2. Use the FastAPI framework preset if Vercel detects it; otherwise choose **Other**. Keep the default install/build settings so Vercel installs from `requirements.txt`.
