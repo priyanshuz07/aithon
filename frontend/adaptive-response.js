@@ -1,7 +1,7 @@
 (function (global) {
   "use strict";
 
-  const apiBase = "http://127.0.0.1:8000/api";
+  const apiBase = global.ABF_API_BASE || "/api";
   let initialized = false;
   let overlay = null;
   let bypassedElement = null;

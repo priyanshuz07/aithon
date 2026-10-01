@@ -1,4 +1,5 @@
 from functools import lru_cache
+import os
 from secrets import token_urlsafe
 
 from pydantic import Field, model_validator
@@ -9,7 +10,11 @@ class Settings(BaseSettings):
     app_name: str = "AI Behavior Firewall 2.0"
     app_env: str = "development"
     api_v1_prefix: str = "/api/v1"
-    database_url: str = "sqlite:///../data/behavior_firewall.db"
+    database_url: str = Field(
+        default_factory=lambda: "sqlite:////tmp/behavior_firewall.db"
+        if os.getenv("VERCEL") == "1"
+        else "sqlite:///../data/behavior_firewall.db"
+    )
     ml_model_path: str | None = None
     data_retention_enabled: bool = True
     data_retention_days: int = Field(default=90, ge=1, le=3650)

@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const apiBase = "http://127.0.0.1:8000/api";
+  const apiBase = window.ABF_API_BASE || "/api";
   if (window.ABFAdaptiveAccess) window.ABFAdaptiveAccess.initialize();
   const monitor = window.ABFBehaviorSDK.create({
     apiBaseUrl: apiBase,

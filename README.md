@@ -20,10 +20,10 @@ The browser may send an aggregate snapshot for display, but risk scores are comp
 
 - Python 3.14-tested, FastAPI, Pydantic, SQLAlchemy 2, and SQLite.
 - Scikit-learn `StandardScaler` + `LogisticRegression`, trained on deterministic synthetic behavioral profiles; joblib artifact is optional.
-- HTML, CSS, JavaScript, locally installed Chart.js, and Lucide icons for the local website and dashboard.
+- HTML, CSS, JavaScript, and CDN-hosted Chart.js and Lucide icons for the website and dashboard.
 - `unittest` and FastAPI `TestClient` for API, database, risk, model, migration, privacy, and adaptive-response checks.
 
-Node.js with npm is required only to install the local dashboard chart dependency. Python and the installed `.venv` are used for the backend, training, and tests.
+Python and the installed `.venv` are used for local development, training, and tests. The browser loads dashboard chart and icon libraries from their CDNs.
 
 ## Windows installation
 
@@ -62,6 +62,21 @@ Open <http://127.0.0.1:5500/>. Dashboard: <http://127.0.0.1:5500/dashboard.html>
 If another process already owns port `5500`, use `--port 5501` and open the matching `http://127.0.0.1:5501/` URLs. The API CORS defaults include both ports. A Python `http.server` 404 saying “File not found” means the URL path is not under that server's document root; use `frontend\serve.py` from the project root instead of launching `python -m http.server` from an arbitrary directory.
 
 At startup the service creates/migrates SQLite tables, then purges sessions older than the configured retention window. The default database is `data/behavior_firewall.db`.
+
+## Deploy on Vercel
+
+The root `pyproject.toml` points Vercel at `backend.app.main:app`. The FastAPI app serves the existing `frontend/` directory, and browser API calls use same-origin `/api` paths on Vercel. Local static development keeps using `127.0.0.1:8000` through `frontend/api-config.js`.
+
+1. Import this repository in Vercel and keep the project Root Directory at the repository root. Do not set it to `backend/` or `frontend/`.
+2. Use the FastAPI framework preset if Vercel detects it; otherwise choose **Other**. Keep the default install/build settings so Vercel installs from `requirements.txt`.
+3. Add a stable, randomly generated `DEMO_CHALLENGE_SECRET` environment variable. Add `ADMIN_API_KEY` only if administrator review is needed. `SAFE_DEMO_MODE` must remain `true`.
+4. Deploy a preview with `vercel`, check `/api/health`, `/docs`, `/`, and `/dashboard.html`, then promote it with `vercel --prod` or Vercel's production deployment flow.
+
+The default Vercel SQLite database is `/tmp/behavior_firewall.db`. It is writable for a function instance but ephemeral and not shared across instances; sessions can disappear after a cold start or be inconsistent between instances. Use it only for disposable demos. For persistent production sessions, provision a managed PostgreSQL database, install a PostgreSQL SQLAlchemy driver such as `psycopg[binary]`, set `DATABASE_URL` to its connection URL, and run/validate the schema migrations against that database. This project does not silently replace SQLite or configure a hosted database for you.
+
+The generated model artifact `data/behavior_model.joblib` is ignored by Git. Vercel can bundle it when it is supplied in the deployment source, but a Git-based deployment will not contain this ignored local file by default. Without the artifact, the existing rule-based risk scoring still runs and the dashboard reports the optional classifier as unavailable. To deploy the trained classifier, deliberately add the artifact to the deployment source and set `ML_MODEL_PATH` only if it is stored at a non-default path.
+
+The dashboard chart and icon scripts use external CDNs, as the existing product images do. A restrictive network or Content Security Policy that blocks those CDNs will disable charts/icons, but does not affect the API or stored session data.
 
 ## Machine-learning model
 
@@ -113,7 +128,7 @@ Set `DATA_RETENTION_ENABLED=true|false` and `DATA_RETENTION_DAYS` (default `90`,
 
 Settings may be supplied in `.env` or as environment variables:
 
-- `DATABASE_URL`: defaults to `sqlite:///../data/behavior_firewall.db`, relative to the backend working directory.
+- `DATABASE_URL`: local default is `sqlite:///../data/behavior_firewall.db`, relative to the backend working directory. On Vercel, the default is ephemeral `sqlite:////tmp/behavior_firewall.db`; configure a managed database URL for persistent storage.
 - `ML_MODEL_PATH`: optional local joblib artifact; defaults to `data/behavior_model.joblib` at the project root.
 - `RISK_MEDIUM_THRESHOLD`, `RISK_HIGH_THRESHOLD`, `RISK_CRITICAL_THRESHOLD`: defaults `30`, `60`, and `80`; values must be increasing.
 - `DATA_RETENTION_ENABLED`, `DATA_RETENTION_DAYS`: startup cleanup switch and retention window (default enabled, 90 days).

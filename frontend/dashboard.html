@@ -6,8 +6,9 @@
     <meta name="theme-color" content="#090d18">
     <title>Security dashboard | Aegis Lab</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="api-config.js" defer></script>
     <script src="behavior-sdk.js" defer></script>
-    <script src="node_modules/chart.js/dist/chart.umd.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
     <script src="app.js" defer></script>
     <script src="dashboard.js" defer></script>
@@ -131,6 +132,6 @@
       </main>
     </div>
     <dialog id="session-dialog" class="session-dialog" aria-labelledby="session-dialog-title"><div class="dialog-toolbar"><span id="session-dialog-title" class="eyebrow">SESSION INVESTIGATION</span><button id="close-session-dialog" class="icon-button" type="button" aria-label="Close session details"><i data-lucide="x"></i></button></div><div id="session-detail-content"></div></dialog>
-    <footer class="site-footer container"><a class="brand" href="index.html"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a><span>LOCAL DEMO / PRIVACY-FIRST TELEMETRY</span><a href="http://127.0.0.1:8000/docs" target="_blank" rel="noreferrer" data-monitor-action="footer.api_docs">API documentation ↗</a></footer>
+    <footer class="site-footer container"><a class="brand" href="index.html"><span class="brand-mark">A</span><span>AEGIS<span class="brand-light"> / LAB</span></span></a><span>LOCAL DEMO / PRIVACY-FIRST TELEMETRY</span><a href="/docs" data-api-docs target="_blank" rel="noreferrer" data-monitor-action="footer.api_docs">API documentation ↗</a></footer>
   </body>
 </html>

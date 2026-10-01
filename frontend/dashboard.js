@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const apiBase = String(window.ABF_API_BASE || "http://127.0.0.1:8000/api").replace(/\/$/, "");
+  const apiBase = String(window.ABF_API_BASE || "/api").replace(/\/$/, "");
   const refreshSelect = document.querySelector("#refresh-interval");
   const sessionBody = document.querySelector("#session-table-body");
   const alertList = document.querySelector("#alert-list");

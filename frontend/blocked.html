@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#090d18">
     <title>Access review | Aegis Lab</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="api-config.js"></script>
   </head>
   <body>
     <header class="site-header">
@@ -35,7 +36,7 @@
           document.querySelector("#blocked-reason").textContent = "No valid request reference was provided.";
           return;
         }
-        fetch("http://127.0.0.1:8000/api/decision/" + encodeURIComponent(requestId))
+        fetch(window.ABF_API_BASE + "/decision/" + encodeURIComponent(requestId))
           .then(function (response) {
             if (!response.ok) throw new Error("The recorded decision is unavailable.");
             return response.json();

@@ -3,7 +3,7 @@
 
   const SDK_VERSION = "1.0.0";
   const DEFAULTS = {
-    apiBaseUrl: "http://127.0.0.1:8000/api",
+    apiBaseUrl: global.ABF_API_BASE || "/api",
     flushIntervalMs: 5000,
     maxBatchSize: 40,
     maxQueueSize: 160,
