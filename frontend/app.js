@@ -2,8 +2,9 @@
   "use strict";
 
   const apiBase = window.ABF_API_BASE || "/api";
+  const isLocalDemoDashboard = document.body.dataset.monitorPage === "dashboard";
   if (window.ABFAdaptiveAccess) window.ABFAdaptiveAccess.initialize();
-  const monitor = window.ABFBehaviorSDK.create({
+  const monitor = isLocalDemoDashboard ? null : window.ABFBehaviorSDK.create({
     apiBaseUrl: apiBase,
     flushIntervalMs: 5000,
     onStatus: updateCollectorStatus,
@@ -33,6 +34,12 @@
     const label = document.querySelector("#home-api-label, #api-label");
     const detail = document.querySelector("#home-api-detail, #api-detail");
     if (!indicator || !label || !detail) return;
+    if (isLocalDemoDashboard) {
+      indicator.className = "status-orb online";
+      label.textContent = "LOCAL DEMO";
+      detail.textContent = "No API or database required";
+      return;
+    }
 
     try {
       const response = await fetch(apiBase + "/health");
@@ -117,6 +124,43 @@
     const sessionId = document.querySelector("#session-id");
     const flushButton = document.querySelector("#flush-events");
     const disableButton = document.querySelector("#disable-monitoring");
+
+    if (!monitor) {
+      const demoMetrics = {
+        "#metric-page-visits": "3",
+        "#metric-clicks": "26",
+        "#metric-forms": "1",
+        "#metric-repeats": "4",
+        "#metric-interval": '1860<span class="metric-unit">ms</span>',
+        "#metric-page-time": '42<span class="metric-unit">s</span>',
+        "#metric-session-time": "42",
+        "#metric-requests": "18",
+        "#metric-queued": "0",
+      };
+      Object.keys(demoMetrics).forEach(function (selector) {
+        const element = document.querySelector(selector);
+        if (element) element.innerHTML = demoMetrics[selector];
+      });
+      document.querySelector("#session-id").textContent = "DEMO-LOCAL";
+      document.querySelector("#api-label").textContent = "LOCAL DEMO";
+      document.querySelector("#api-detail").textContent = "No API or database required";
+      document.querySelector("#api-orb").className = "status-orb online";
+      document.querySelector("#collector-status").textContent = "DEMO MODE";
+      document.querySelector("#collector-status").classList.add("is-online");
+      document.querySelectorAll("[data-sdk-status]").forEach(function (element) { element.textContent = "LOCAL DEMO"; });
+      const notice = document.querySelector("[data-monitor-notice-copy]");
+      if (notice) notice.textContent = "DEMO MODE · This dashboard uses predefined local scenarios. No visitor behavior is sent to an API.";
+      flushButton.addEventListener("click", function () {
+        document.querySelector("#activity-feedback").textContent = "Frontend demo only · no event batch was sent.";
+      });
+      let paused = false;
+      disableButton.addEventListener("click", function () {
+        paused = !paused;
+        disableButton.textContent = paused ? "Resume demo monitor" : "Pause demo monitor";
+        document.querySelector("#collector-status").textContent = paused ? "PAUSED" : "DEMO MODE";
+      });
+      return;
+    }
 
     function renderMetrics() {
       const data = monitor.getSnapshot();

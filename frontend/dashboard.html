@@ -19,50 +19,50 @@
       <nav class="main-nav" aria-label="Main navigation"><a href="products.html" data-monitor-action="nav.products">Marketplace</a><a href="dashboard.html" aria-current="page" data-monitor-action="nav.dashboard">Security console</a></nav>
       <div class="header-actions"><a class="button button-small button-outline" href="login.html" data-monitor-action="nav.sign_in">Sign in</a><button class="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false">Menu</button></div>
     </header>
-    <div class="monitor-notice" role="status"><span class="live-dot"></span><span data-monitor-notice-copy>Behavior monitoring is active for this demo. We measure action counts and timing only; typed and sensitive form values are never collected.</span><span class="monitor-state" data-sdk-status>Connecting</span></div>
+    <div class="monitor-notice" role="status"><span class="live-dot"></span><span data-monitor-notice-copy>DEMO MODE · Predefined frontend scenarios only. No visitor behavior is sent to an API.</span><span class="monitor-state" data-sdk-status>LOCAL DEMO</span></div>
     <div class="dashboard-layout">
       <aside class="dashboard-sidebar" aria-label="Dashboard sections">
         <div class="sidebar-label">SECURITY OPERATIONS</div>
         <nav class="dashboard-nav">
           <a href="#overview" class="is-active"><i data-lucide="layout-dashboard"></i><span>Overview</span></a>
           <a href="#traffic"><i data-lucide="chart-no-axes-combined"></i><span>Traffic analytics</span></a>
-          <a href="#sessions"><i data-lucide="activity"></i><span>Live sessions</span><span class="nav-count" id="nav-session-count">0</span></a>
-          <a href="#alerts"><i data-lucide="bell-ring"></i><span>Suspicious sessions</span><span class="nav-count nav-alert-count" id="nav-alert-count">0</span></a>
+          <a href="#sessions"><i data-lucide="activity"></i><span>Live sessions</span><span class="nav-count" id="nav-session-count">24</span></a>
+          <a href="#alerts"><i data-lucide="bell-ring"></i><span>Suspicious sessions</span><span class="nav-count nav-alert-count" id="nav-alert-count">38</span></a>
           <a href="#recent-events"><i data-lucide="activity"></i><span>Recent events</span></a>
           <a href="#model"><i data-lucide="cpu"></i><span>Model status</span></a>
           <a href="#demo-lab"><i data-lucide="flask-conical"></i><span>Scenario lab</span></a>
         </nav>
-        <div class="sidebar-bottom"><span class="sidebar-pulse"></span><div><strong id="sidebar-api-state">CONNECTING</strong><span>Local API connection</span></div></div>
+        <div class="sidebar-bottom"><span class="sidebar-pulse"></span><div><strong id="sidebar-api-state">DEMO MODE</strong><span>Frontend-only simulation</span></div></div>
       </aside>
       <main class="dashboard-main" id="overview">
         <div class="dashboard-topline">
-          <div><p class="eyebrow">LIVE SECURITY DASHBOARD / SIMULATED DEMO</p><h1>Security <span>dashboard</span></h1><p class="dashboard-subtitle">Live simulated sessions, behavior signals, and firewall decisions.</p></div>
+          <div><p class="eyebrow">LIVE SECURITY DASHBOARD / SIMULATED DEMO</p><h1>Security <span>dashboard</span></h1><p class="dashboard-subtitle">Predefined sessions, behavior signals, and firewall decisions. No backend required.</p></div>
           <div class="dashboard-controls">
             <label class="refresh-control"><span>Refresh</span><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="10" selected>10 seconds</option><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">60 seconds</option><option value="0">Off</option></select></label>
-            <span id="refresh-state" class="refresh-state">Auto refresh every 10s</span>
+            <span id="refresh-state" class="refresh-state">Fixed demo data</span>
             <button id="refresh-dashboard" class="icon-button refresh-button" type="button" title="Refresh dashboard" aria-label="Refresh dashboard"><i data-lucide="refresh-cw"></i></button>
           </div>
         </div>
-        <div id="dashboard-loading" class="dashboard-state loading-state">Loading persisted security data...</div>
+        <div id="dashboard-loading" class="dashboard-state loading-state" hidden>Loading demo data...</div>
         <div id="dashboard-error" class="dashboard-state error-state" role="alert" hidden></div>
-        <div id="dashboard-content" hidden>
+        <div id="dashboard-content">
           <section class="overview-section" aria-label="Overview metrics">
-            <div class="overview-heading"><div class="live-heading"><span class="live-dot"></span><span>LIVE OVERVIEW</span></div><div class="overview-status"><span id="api-state" class="status-pill is-online">CONNECTING</span><span id="last-updated">Awaiting data</span></div></div>
+            <div class="overview-heading"><div class="live-heading"><span class="live-dot"></span><span>DEMO MODE / PREDEFINED DATA</span></div><div class="overview-status"><span id="api-state" class="status-pill is-review">SIMULATED</span><span id="last-updated">Preset data ready</span></div></div>
             <div class="overview-grid">
-              <article class="overview-card overview-total"><span>Total Sessions</span><strong id="overview-total">--</strong><small>Simulated demo history</small><i data-lucide="layers-3"></i></article>
-              <article class="overview-card accent-blue"><span>Active Users</span><strong id="overview-active">--</strong><small>Currently active in this demo</small><i data-lucide="radio-tower"></i></article>
-              <article class="overview-card"><span>Normal Sessions</span><strong id="overview-normal">--</strong><small>Latest assessment is normal</small><i data-lucide="shield-check"></i></article>
-              <article class="overview-card accent-amber"><span>Suspicious Sessions</span><strong id="overview-suspicious">--</strong><small>Medium risk and above</small><i data-lucide="scan-eye"></i></article>
-              <article class="overview-card accent-red"><span>Blocked Sessions</span><strong id="overview-blocked">--</strong><small>Latest response is block</small><i data-lucide="ban"></i></article>
-              <article class="overview-card overview-total"><span>Average Risk Score</span><strong id="overview-average-risk">--</strong><small>Latest score per analyzed session</small><i data-lucide="chart-no-axes-combined"></i></article>
-              <article class="overview-card accent-orange"><span>Threats Detected</span><strong id="overview-threats">--</strong><small>Sessions at medium risk or higher</small><i data-lucide="shield-alert"></i></article>
-              <article class="overview-card"><span>Requests Analyzed</span><strong id="overview-requests">--</strong><small>Simulated request decisions</small><i data-lucide="scan-line"></i></article>
+              <article class="overview-card overview-total"><span>Total Sessions</span><strong id="overview-total">250</strong><small>Predefined demo history</small><i data-lucide="layers-3"></i></article>
+              <article class="overview-card accent-blue"><span>Active Sessions</span><strong id="overview-active">24</strong><small>Currently active in this demo</small><i data-lucide="radio-tower"></i></article>
+              <article class="overview-card"><span>Normal Sessions</span><strong id="overview-normal">180</strong><small>Latest assessment is normal</small><i data-lucide="shield-check"></i></article>
+              <article class="overview-card accent-amber"><span>Suspicious Sessions</span><strong id="overview-suspicious">45</strong><small>Medium risk and above</small><i data-lucide="scan-eye"></i></article>
+              <article class="overview-card accent-red"><span>Blocked Sessions</span><strong id="overview-blocked">25</strong><small>Latest response is block</small><i data-lucide="ban"></i></article>
+              <article class="overview-card overview-total"><span>Average Risk Score</span><strong id="overview-average-risk">42</strong><small>Predefined session average</small><i data-lucide="chart-no-axes-combined"></i></article>
+              <article class="overview-card accent-orange"><span>Threats Detected</span><strong id="overview-threats">38</strong><small>Predefined threat signals</small><i data-lucide="shield-alert"></i></article>
+              <article class="overview-card"><span>Requests Analyzed</span><strong id="overview-requests">1,250</strong><small>Simulated request decisions</small><i data-lucide="scan-line"></i></article>
             </div>
-            <div class="monitoring-line"><span class="monitoring-ring"></span><span id="monitoring-copy">Checking API and database</span><span id="last-activity">No recorded activity</span></div>
+            <div class="monitoring-line"><span class="monitoring-ring"></span><span id="monitoring-copy">Frontend demo data loaded · no backend required</span><span id="last-activity">Latest preset event available</span></div>
           </section>
 
           <section class="dashboard-section" id="traffic">
-            <div class="section-title-row"><div><p class="eyebrow">TRAFFIC ANALYTICS / LAST 24 HOURS</p><h2>Behavior over time</h2></div><span class="section-meta">LIVE DATABASE</span></div>
+            <div class="section-title-row"><div><p class="eyebrow">TRAFFIC ANALYTICS / PREDEFINED HISTORY</p><h2>Behavior over time</h2></div><span class="section-meta">LOCAL DEMO DATA</span></div>
             <div class="analytics-grid">
               <article class="chart-panel chart-panel-wide"><div class="chart-heading"><div><h3>Risk score history</h3><p>Simulated score changes, refreshed live</p></div><span class="chart-live-mark">DEMO LIVE</span></div><div class="chart-canvas"><canvas id="risk-history-chart" aria-label="Simulated risk scores over time" role="img"></canvas><p id="risk-history-empty" class="chart-empty" hidden>No risk scores have been recorded yet.</p><p class="chart-unavailable" hidden>Chart library unavailable. Risk history remains in session details.</p></div></article>
               <article class="chart-panel"><div class="chart-heading"><div><h3>Session outcomes</h3><p>Normal, suspicious, and blocked</p></div></div><div class="chart-canvas chart-canvas-doughnut"><canvas id="risk-chart" aria-label="Session outcome distribution" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
@@ -70,17 +70,17 @@
               <article class="chart-panel chart-panel-wide"><div class="chart-heading"><div><h3>Traffic activity</h3><p>Requests analyzed per interval</p></div><span class="chart-live-mark">SIMULATED</span></div><div class="chart-canvas"><canvas id="traffic-chart" aria-label="Simulated request activity" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
               <article class="chart-panel chart-panel-wide"><div class="chart-heading"><div><h3>Threat detections</h3><p>Suspicious signals identified over time</p></div><span class="chart-live-mark">SIMULATED</span></div><div class="chart-canvas"><canvas id="threat-chart" aria-label="Simulated threat detections" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
             </div>
-            <div class="decision-stats-panel"><div><p class="eyebrow">FIREWALL DECISIONS / LATEST PER SESSION</p><span class="decision-stats-note">Review counts persisted delay decisions from the existing backend action schema.</span></div><div class="decision-stats-grid">
-              <article><span class="decision-dot decision-dot-allow"></span><span>Allow</span><strong id="decision-allow-count">0</strong></article>
-              <article><span class="decision-dot decision-dot-review"></span><span>Review</span><strong id="decision-review-count">0</strong></article>
-              <article><span class="decision-dot decision-dot-challenge"></span><span>Challenge</span><strong id="decision-challenge-count">0</strong></article>
-              <article><span class="decision-dot decision-dot-block"></span><span>Block</span><strong id="decision-block-count">0</strong></article>
+            <div class="decision-stats-panel"><div><p class="eyebrow">FIREWALL DECISIONS / PRESET DISTRIBUTION</p><span class="decision-stats-note">Predefined local scenario decisions; no firewall enforcement is performed.</span></div><div class="decision-stats-grid">
+              <article><span class="decision-dot decision-dot-allow"></span><span>Allow</span><strong id="decision-allow-count">180</strong></article>
+              <article><span class="decision-dot decision-dot-review"></span><span>Review</span><strong id="decision-review-count">44</strong></article>
+              <article><span class="decision-dot decision-dot-challenge"></span><span>Challenge</span><strong id="decision-challenge-count">1</strong></article>
+              <article><span class="decision-dot decision-dot-block"></span><span>Block</span><strong id="decision-block-count">25</strong></article>
             </div></div>
           </section>
 
           <section class="dashboard-section" id="sessions">
-            <div class="section-title-row"><div><p class="eyebrow">SESSION OBSERVABILITY</p><h2>Live session monitor</h2></div><span id="session-count-label" class="section-meta">Loading sessions</span></div>
-            <div class="table-toolbar"><label class="session-search"><i data-lucide="search"></i><input id="session-search" type="search" placeholder="Search ID or category" aria-label="Search sessions"></label><span class="table-note">Select a row for stored session details</span></div>
+            <div class="section-title-row"><div><p class="eyebrow">SESSION OBSERVABILITY / DEMO FIXTURES</p><h2>Live session monitor</h2></div><span id="session-count-label" class="section-meta">3 predefined sessions</span></div>
+            <div class="table-toolbar"><label class="session-search"><i data-lucide="search"></i><input id="session-search" type="search" placeholder="Search ID or category" aria-label="Search sessions"></label><span class="table-note">Select a row for predefined session details</span></div>
             <div class="table-scroll"><table class="session-table"><thead><tr><th>Session ID</th><th>Started</th><th>Clicks</th><th>Request rate</th><th>Risk score</th><th>Estimated pattern</th><th>Risk</th><th>Response</th></tr></thead><tbody id="session-table-body"><tr><td colspan="8" class="table-empty">Loading persisted sessions...</td></tr></tbody></table></div>
           </section>
 
@@ -98,11 +98,11 @@
 
           <section class="dashboard-section" id="recent-events">
             <div class="section-title-row"><div><p class="eyebrow">SIMULATED LIVE ACTIVITY</p><h2>Recent security events</h2></div><span id="recent-event-count" class="section-meta">Starting demo feed</span></div>
-            <div id="recent-event-list" class="recent-event-list"><p class="loading-state">Loading persisted events...</p></div>
+            <div id="recent-event-list" class="recent-event-list"><p class="loading-state">Predefined demo events are ready.</p></div>
           </section>
 
           <section class="dashboard-section model-section" id="model">
-            <div class="section-title-row"><div><p class="eyebrow">MODEL REGISTRY</p><h2>Model status</h2></div><span class="section-meta">BACKEND REPORTED</span></div>
+            <div class="section-title-row"><div><p class="eyebrow">MODEL STATUS</p><h2>Model status</h2></div><span class="section-meta">PRESET SCENARIO LOGIC</span></div>
             <div class="model-panel">
               <div class="model-emblem" id="model-indicator"><i data-lucide="brain-circuit"></i></div>
               <div class="model-primary"><span>Machine-learning model</span><strong id="model-type">Checking model registry</strong><small id="model-training">No training status reported</small></div>
@@ -151,12 +151,12 @@
               <section class="guided-dashboard" aria-labelledby="guided-dashboard-title">
                 <div class="section-title-row"><div><p class="eyebrow">LIVE SECURITY DASHBOARD</p><h3 id="guided-dashboard-title">Demo data</h3></div><span class="simulation-demo-tag">LOCAL SCENARIO RUNS</span></div>
                 <div class="guided-metric-grid">
-                  <article><span>Active Demo Sessions</span><strong id="demo-metric-sessions">0</strong></article>
-                  <article><span>Normal Sessions</span><strong id="demo-metric-normal">0</strong></article>
-                  <article><span>Suspicious Sessions</span><strong id="demo-metric-suspicious">0</strong></article>
-                  <article><span>Blocked Sessions</span><strong id="demo-metric-blocked">0</strong></article>
-                  <article><span>Average Demo Risk Score</span><strong id="demo-metric-average">0</strong></article>
-                  <article><span>Total Demo Threats Detected</span><strong id="demo-metric-threats">0</strong></article>
+                  <article><span>Active Demo Sessions</span><strong id="demo-metric-sessions">3</strong></article>
+                  <article><span>Normal Sessions</span><strong id="demo-metric-normal">1</strong></article>
+                  <article><span>Suspicious Sessions</span><strong id="demo-metric-suspicious">2</strong></article>
+                  <article><span>Blocked Sessions</span><strong id="demo-metric-blocked">1</strong></article>
+                  <article><span>Average Demo Risk Score</span><strong id="demo-metric-average">55</strong></article>
+                  <article><span>Total Demo Threats Detected</span><strong id="demo-metric-threats">2</strong></article>
                 </div>
                 <div class="guided-dashboard-grid">
                   <article class="guided-dashboard-panel"><div class="chart-heading"><div><h4>Risk score history</h4><p>One bar per completed local scenario</p></div></div><div id="demo-risk-graph" class="demo-risk-graph"><p class="detail-empty">Run a scenario to plot its risk score.</p></div></article>

@@ -20,10 +20,10 @@ The browser may send an aggregate snapshot for display, but risk scores are comp
 
 - Python 3.14-tested, FastAPI, Pydantic, SQLAlchemy 2, and SQLite.
 - Scikit-learn `StandardScaler` + `LogisticRegression`, trained on deterministic synthetic behavioral profiles; joblib artifact is optional.
-- HTML, CSS, JavaScript, and CDN-hosted Chart.js and Lucide icons for the website and dashboard.
+- HTML, CSS, JavaScript, local Chart.js when installed, and Lucide icons for the website and dashboard. The dashboard includes a native canvas fallback for charts.
 - `unittest` and FastAPI `TestClient` for API, database, risk, model, migration, privacy, and adaptive-response checks.
 
-Python and the installed `.venv` are used for local development, training, and tests. The browser loads dashboard chart and icon libraries from their CDNs.
+Python and the installed `.venv` are used for backend development, training, and tests. The judge-facing dashboard itself is frontend-only and does not require Python, a database, or an API.
 
 ## Windows installation
 
@@ -76,7 +76,7 @@ The default Vercel SQLite database is `/tmp/behavior_firewall.db`. It is writabl
 
 The generated model artifact `data/behavior_model.joblib` is ignored by Git. Vercel can bundle it when it is supplied in the deployment source, but a Git-based deployment will not contain this ignored local file by default. Without the artifact, the existing rule-based risk scoring still runs and the dashboard reports the optional classifier as unavailable. To deploy the trained classifier, deliberately add the artifact to the deployment source and set `ML_MODEL_PATH` only if it is stored at a non-default path.
 
-The dashboard chart and icon scripts use external CDNs, as the existing product images do. A restrictive network or Content Security Policy that blocks those CDNs will disable charts/icons, but does not affect the API or stored session data.
+The existing Lucide icon script uses a CDN and may be absent when external networks are blocked. Dashboard charts use the installed Chart.js library when available and otherwise draw from the same local fixtures using the canvas fallback.
 
 ## Machine-learning model
 
@@ -108,9 +108,9 @@ Administrator review is optional. Set `ADMIN_API_KEY` to a private value at leas
 
 ## AITHON demonstration
 
-1. Start the backend and frontend using the commands above.
-2. Open the dashboard. A local simulated overview, session list, event feed, and five charts start immediately, including when the API is offline. Values are randomized on each page load and update every three seconds.
-3. In **Live Demo**, select **Normal User**, **Automated Bot**, or **Adaptive Bot** to switch the live profile and risk decision. Press **Run Analysis** to walk through the animated explanation stages; **Reset Demo** starts a fresh populated simulation.
+1. Start only the frontend server from the project root: `\.venv\Scripts\python.exe frontend\serve.py --host 127.0.0.1 --port 5500`. The dashboard does not require the backend or database.
+2. Open the dashboard. Its frontend fixtures immediately show 250 sessions, 24 active sessions, 180 normal, 45 suspicious, 25 blocked, average risk 42, 38 threats, and 1,250 analyzed requests. All five charts, the three example sessions, and the event timeline render from local JavaScript data.
+3. Select **Normal User**, **Automated Bot**, or **Adaptive Bot** to update the selected session, risk history endpoint, explanation, timeline, and firewall decision (15 / Allow, 92 / Block, 58 / Review). Press **Run Analysis** for the existing animated explanation stages; **Reset Demo** returns to the Adaptive Bot fixture.
 4. Expand **Server-generated scenario API** to run each persisted backend profile:
    - A: normal browsing -> low risk / allow.
    - B: repetitive scraping-like page/request burst -> medium risk / challenge.
@@ -118,7 +118,7 @@ Administrator review is optional. Set `ADMIN_API_KEY` to a private value at leas
    - D: critical simulated combined signals -> critical risk / block.
 5. The challenge scenario can also be demonstrated on a guarded storefront interaction after a session's server-computed response is `challenge`.
 
-For a judge-facing walkthrough, use **Normal User**, **Automated Bot**, or **Adaptive Bot** in the dashboard's **Live Demo** panel. The self-contained simulation uses preset behavior explanations and randomized scenario-bounded risk scores; it does not call an ML service or claim to be a live prediction. Its thresholds are 0-39 ALLOW, 40-69 CHALLENGE / REVIEW, and 70-100 BLOCK. The main overview and charts continue updating independently of **Run Analysis**. **Reset Demo** reinitializes populated local demo data and leaves backend sessions untouched.
+For a judge-facing walkthrough, use **Normal User**, **Automated Bot**, or **Adaptive Bot** in the dashboard's **Live Demo** panel. The self-contained simulation uses fixed behavior explanations and scores; it does not call an ML service or claim to be a live prediction. The main dashboard values and chart series stay fixed, while the selected scenario updates the focused session and risk-history endpoint. **Reset Demo** restores the original local fixtures.
 
 The expandable **Server-generated scenario API** and **Live API event-stream simulations** preserve the existing backend demonstrations. The latter creates a separately tagged session and submits timed click/navigation/request events through the regular collector; scores and responses come from the current backend analysis. Its **Stop simulation** preserves the partial session, and **Reset output** only clears its panel. Those sessions are marked `SIM` in the database-backed dashboard.
 
@@ -190,7 +190,7 @@ Set-Location ..
 - The math challenge is not a CAPTCHA and can be automated.
 - Request/session limits and demo scenario throttling are process-local and not distributed.
 - Optional model artifacts are local joblib files and should be treated as trusted executable artifacts.
-- The dashboard requires the local API. Chart.js is installed locally with `npm ci`; Lucide icons are CDN-hosted and may be absent without network access. Data endpoints remain local.
+- The judge-facing dashboard uses fixed frontend fixtures and works without the API or database. The expandable API scenario and event-stream tools remain optional backend demonstrations. Chart.js can be installed with `npm ci`; if it is unavailable, charts use the native canvas fallback. Lucide icons may be absent without network access.
 
 ## Project layout
 
