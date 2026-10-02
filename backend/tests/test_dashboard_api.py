@@ -91,8 +91,13 @@ class DashboardApiTests(unittest.TestCase):
         summary = summary_response.json()
         self.assertEqual(summary["total_sessions"], 1)
         self.assertEqual(summary["normal_sessions"], 1)
+        self.assertEqual(summary["average_risk_score"], 0)
+        self.assertEqual(summary["threats_detected"], 0)
         self.assertEqual(summary["risk_distribution"]["low"], 1)
         self.assertEqual(summary["response_distribution"]["allow"], 1)
+        self.assertEqual(len(summary["risk_history"]), 1)
+        self.assertEqual(summary["risk_history"][0]["risk_score"], 0)
+        self.assertEqual(summary["recent_events"][0]["event_type"], "interaction.click")
         row = summary["sessions"][0]
         self.assertEqual(row["session_id"], self.public_id)
         self.assertEqual(row["click_count"], 7)
@@ -103,11 +108,14 @@ class DashboardApiTests(unittest.TestCase):
         self.assertEqual(details_response.status_code, 200)
         details = details_response.json()
         self.assertEqual(details["event_count"], 1)
+        self.assertEqual(len(details["behavior_timeline"]), 1)
+        self.assertEqual(details["behavior_timeline"][0]["description"], "Click interaction recorded")
         self.assertEqual(details["features"]["click_count"], 7)
         self.assertEqual(details["risk_score"], 0)
         self.assertEqual(details["actual_response"], "allow")
         self.assertEqual(details["rule_signals"], [])
         self.assertIsNone(details["ml_prediction"])
+        self.assertEqual(details["behavioral_factors"]["request_frequency"]["level"], "insufficient_data")
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ class AccessDecisionResponse(ApiModel):
     estimated_behavioral_category: str
     ml_prediction: dict[str, object] | None = None
     signals: list[dict[str, object]]
+    behavioral_factors: dict[str, dict[str, object]] = Field(default_factory=dict)
     recommended_action: ResponseAction
     actual_response: ResponseAction
     reason: str

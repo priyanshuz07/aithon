@@ -10,15 +10,20 @@ from sqlalchemy.orm import Session as OrmSession
 
 from app.db.session import get_db
 from app.core.config import get_settings
+from app.core.decision_service import derive_behavior_features
+from app.core.risk_engine import explain_behavioral_factors
 from app.models import SecurityDecision, SecurityEvent, Session, SessionIdentity, SessionRiskScore
 from app.ml.inference import get_model_status
 from app.schemas.behavior import BehaviorFeatures
 from app.schemas.adaptive import DecisionHistoryEntry
 from app.schemas.dashboard import (
     DashboardModelStatus,
+    DashboardRecentEvent,
+    DashboardRiskHistoryPoint,
     DashboardSession,
     DashboardSessionDetails,
     DashboardSummary,
+    DashboardTimelineEvent,
     DashboardTimePoint,
 )
 
@@ -26,6 +31,13 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 _RISK_LEVELS = ("low", "medium", "high", "critical", "not_analyzed")
 _RESPONSES = ("allow", "challenge", "delay", "block", "not_analyzed")
+_EVENT_DESCRIPTIONS = {
+    "session.start": "Session started",
+    "navigation.page_view": "Navigation page view recorded",
+    "interaction.click": "Click interaction recorded",
+    "interaction.form_submit": "Form submission recorded",
+    "network.request": "Network request observed",
+}
 
 
 def _aware(value: datetime) -> datetime:
@@ -93,6 +105,7 @@ def _as_dashboard_session(
     score = risk.score if risk else None
     return DashboardSession(
         session_id=public_id,
+        simulation_mode=(session.attributes or {}).get("simulation_mode"),
         started_at=_aware(session.started_at),
         last_seen_at=_aware(session.last_seen_at),
         click_count=features.click_count if features else 0,
@@ -113,6 +126,7 @@ def dashboard_summary(
     now = datetime.now(timezone.utc)
     sessions = db.scalars(select(Session).order_by(desc(Session.started_at))).all()
     identities = _session_ids(db, sessions)
+    sessions_by_id = {session.id: session for session in sessions}
     risks = _latest_records(db, SessionRiskScore)
     decisions = _latest_records(db, SecurityDecision)
 
@@ -120,6 +134,7 @@ def dashboard_summary(
     response_distribution = Counter({action: 0 for action in _RESPONSES})
     normal_sessions = suspicious_sessions = high_risk_sessions = blocked_sessions = 0
     active_sessions = 0
+    scored_values: list[int] = []
     latest_activity: datetime | None = None
     for session in sessions:
         risk = risks.get(session.id)
@@ -128,6 +143,8 @@ def dashboard_summary(
         response = decision.action if decision else "not_analyzed"
         risk_distribution[level] += 1
         response_distribution[response] += 1
+        if risk is not None:
+            scored_values.append(risk.score)
         normal_sessions += _category(risk) == "normal_browsing"
         suspicious_sessions += level in ("medium", "high", "critical")
         high_risk_sessions += level in ("high", "critical")
@@ -167,6 +184,38 @@ def dashboard_summary(
         )
         for session in recent_sessions
     ]
+    recent_risks = db.scalars(
+        select(SessionRiskScore)
+        .order_by(desc(SessionRiskScore.created_at), desc(SessionRiskScore.id))
+        .limit(100)
+    ).all()
+    risk_history = [
+        DashboardRiskHistoryPoint(
+            time=_aware(record.created_at),
+            session_id=identities.get(record.session_id, f"legacy-{record.session_id}"),
+            risk_score=record.score,
+            simulation_mode=(sessions_by_id[record.session_id].attributes or {}).get("simulation_mode")
+            if record.session_id in sessions_by_id else None,
+        )
+        for record in reversed(recent_risks)
+    ]
+    recent_event_rows = db.scalars(
+        select(SecurityEvent)
+        .order_by(desc(SecurityEvent.received_at), desc(SecurityEvent.id))
+        .limit(25)
+    ).all()
+    recent_events = []
+    for event in recent_event_rows:
+        event_session = sessions_by_id.get(event.session_id)
+        recent_events.append(
+            DashboardRecentEvent(
+                time=_aware(event.received_at),
+                session_id=identities.get(event.session_id, f"legacy-{event.session_id}"),
+                event_type=event.event_type,
+                description=_EVENT_DESCRIPTIONS.get(event.event_type, "Behavior event recorded"),
+                simulation_mode=(event_session.attributes or {}).get("simulation_mode") if event_session else None,
+            )
+        )
     db.execute(select(1))
     return DashboardSummary(
         total_sessions=len(sessions),
@@ -175,6 +224,8 @@ def dashboard_summary(
         high_risk_sessions=high_risk_sessions,
         blocked_sessions=blocked_sessions,
         active_sessions=active_sessions,
+        average_risk_score=round(sum(scored_values) / len(scored_values)) if scored_values else None,
+        threats_detected=suspicious_sessions,
         monitoring_status="online",
         latest_activity_at=latest_activity,
         risk_distribution=dict(risk_distribution),
@@ -185,6 +236,8 @@ def dashboard_summary(
             )
             for bucket, counts in hourly.items()
         ],
+        risk_history=risk_history,
+        recent_events=recent_events,
         sessions=dashboard_sessions,
         model_status=DashboardModelStatus(**get_model_status(get_settings().ml_model_path)),
     )
@@ -236,21 +289,48 @@ def dashboard_session_details(
         .group_by(SecurityEvent.event_type)
     ).all()
     event_counts = {event_type: count for event_type, count in event_rows}
+    timeline_rows = db.scalars(
+        select(SecurityEvent)
+        .where(SecurityEvent.session_id == session.id)
+        .order_by(desc(SecurityEvent.occurred_at), desc(SecurityEvent.id))
+        .limit(100)
+    ).all()
+    behavior_timeline = [
+        DashboardTimelineEvent(
+            time=_aware(event.occurred_at),
+            event_type=event.event_type,
+            description=_EVENT_DESCRIPTIONS.get(event.event_type, "Behavior event recorded"),
+        )
+        for event in reversed(timeline_rows)
+    ]
     explanation_data: dict[str, Any] = risk.explanation or {} if risk else {}
+    if risk is not None and "behavioral_factors" not in explanation_data:
+        explanation_data = {
+            **explanation_data,
+            "behavioral_factors": explain_behavioral_factors(
+                derive_behavior_features(db, session),
+                explanation_data.get("signals", []),
+            ),
+        }
+        risk.explanation = explanation_data
+        db.commit()
     action = decision.action if decision else "not_analyzed"
     features = _features(session)
     return DashboardSessionDetails(
         session_id=public_id,
+        simulation_mode=(session.attributes or {}).get("simulation_mode"),
         started_at=_aware(session.started_at),
         last_seen_at=_aware(session.last_seen_at),
         last_analysis_at=_aware(risk.created_at) if risk else None,
         event_count=sum(event_counts.values()),
         event_type_counts=event_counts,
+        behavior_timeline=behavior_timeline,
         features=features,
         risk_score=risk.score if risk else None,
         risk_level=_risk_level(risk.score if risk else None, risk),
         estimated_behavior_category=_category(risk),
         ml_prediction=explanation_data.get("ml_prediction"),
+        behavioral_factors=explanation_data.get("behavioral_factors", {}),
         rule_signals=explanation_data.get("signals", []),
         explanation=explanation_data.get("explanation", "No rule-based analysis has been recorded."),
         recommended_action=decision.recommended_action if decision else explanation_data.get("recommended_response", action),

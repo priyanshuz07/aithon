@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -16,6 +16,7 @@ class ApiModel(BaseModel):
 class SessionStartRequest(ApiModel):
     session_id: UUID = Field(default_factory=uuid4)
     sdk_version: str = Field(default="1.0.0", min_length=1, max_length=40, pattern=r"^[a-zA-Z0-9._-]+$")
+    simulation_mode: Literal["normal_user", "bot_attack", "adaptive_bot"] | None = None
 
     @field_validator("session_id")
     @classmethod
@@ -75,6 +76,7 @@ class BehaviorEvent(ApiModel):
             "interaction.click": {"action_id"},
             "interaction.form_submit": {"form_id"},
             "navigation.page_view": {"page"},
+            "network.request": {"resource_type"},
             "session.start": {"sdk_session_id", "sdk_version"},
         }.get(self.event_type)
         if expected_fields is None or set(self.payload) != expected_fields:
@@ -136,6 +138,7 @@ class RiskAnalysisResponse(ApiModel):
     explanation: str
     recommended_response: str
     ml_prediction: dict[str, Any] | None = None
+    behavioral_factors: dict[str, dict[str, Any]] = Field(default_factory=dict)
 
 
 class BehaviorHealth(ApiModel):

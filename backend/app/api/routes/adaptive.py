@@ -97,6 +97,7 @@ def check_session_access(
         estimated_behavioral_category=risk.intent or "unknown_or_insufficient_evidence",
         ml_prediction=(risk.explanation or {}).get("ml_prediction"),
         signals=(risk.explanation or {}).get("signals", []),
+        behavioral_factors=(risk.explanation or {}).get("behavioral_factors", {}),
         recommended_action=decision.recommended_action,
         actual_response=decision.action,
         reason=decision.reason,

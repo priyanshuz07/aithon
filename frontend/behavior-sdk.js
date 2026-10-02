@@ -131,7 +131,7 @@
       };
     }
 
-    function enqueue(type, payload) {
+    function enqueue(type, payload, persist) {
       pendingEvents.push({
         event_id: createRandomId(),
         type: type,
@@ -141,7 +141,7 @@
       if (pendingEvents.length > config.maxQueueSize) {
         pendingEvents.splice(0, pendingEvents.length - config.maxQueueSize);
       }
-      persistState();
+      if (persist !== false) persistState();
     }
 
     function getBackendSessionId() {
@@ -268,6 +268,7 @@
           return;
         }
         metrics.requestCount += 1;
+        enqueue("network.request", { resource_type: entry.initiatorType }, false);
       });
       persistState();
     }

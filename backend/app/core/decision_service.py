@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 import secrets
+from statistics import pstdev
 from typing import Any
 from uuid import uuid4
 
@@ -47,25 +48,28 @@ def latest_decision(db: OrmSession, session_id: int) -> SecurityDecision | None:
     )
 
 
-def analyze_and_record(db: OrmSession, session: Session) -> tuple[RiskAnalysis, SecurityDecision]:
+def derive_behavior_features(db: OrmSession, session: Session) -> dict[str, Any]:
     events = db.scalars(
         select(SecurityEvent)
         .where(SecurityEvent.session_id == session.id)
-        .order_by(SecurityEvent.received_at, SecurityEvent.id)
+        .order_by(SecurityEvent.occurred_at, SecurityEvent.id)
     ).all()
 
     click_actions: Counter[str] = Counter()
     submitted_forms: Counter[str] = Counter()
+    visited_pages: Counter[str] = Counter()
+    navigation_transitions: Counter[tuple[str, str]] = Counter()
     account_ids: set[str] = set()
     click_times: list[datetime] = []
-    observed_clicks = observed_pages = observed_forms = 0
+    previous_page: str | None = None
+    observed_clicks = observed_pages = observed_forms = observed_requests = 0
     for event in events:
         event_data = event.payload.get("data", event.payload)
         if not isinstance(event_data, dict):
             continue
         if event.event_type == "interaction.click":
             observed_clicks += 1
-            click_times.append(_aware(event.received_at))
+            click_times.append(_aware(event.occurred_at))
             action_id = event_data.get("action_id")
             if isinstance(action_id, str):
                 click_actions[action_id] += 1
@@ -80,11 +84,22 @@ def analyze_and_record(db: OrmSession, session: Session) -> tuple[RiskAnalysis, 
             observed_pages += 1
             page_id = event_data.get("page")
             if isinstance(page_id, str):
+                visited_pages[page_id] += 1
+                if previous_page is not None:
+                    navigation_transitions[(previous_page, page_id)] += 1
+                previous_page = page_id
                 account_ids.add(page_id)
+        elif event.event_type == "network.request":
+            observed_requests += 1
 
     repeated_actions = sum(count - 1 for count in click_actions.values() if count > 1)
     repeated_forms = sum(count - 1 for count in submitted_forms.values() if count > 1)
+    repeated_pages = sum(count - 1 for count in visited_pages.values() if count > 1)
+    repeated_navigation_transitions = sum(
+        count - 1 for count in navigation_transitions.values() if count > 1
+    )
     duration_ms = int(max(0.0, (_aware(session.last_seen_at) - _aware(session.started_at)).total_seconds()) * 1000)
+    click_times.sort()
     click_intervals = [
         int((later - earlier).total_seconds() * 1000)
         for earlier, later in zip(click_times, click_times[1:])
@@ -92,7 +107,12 @@ def analyze_and_record(db: OrmSession, session: Session) -> tuple[RiskAnalysis, 
     average_inter_click_ms = (
         round(sum(click_intervals) / len(click_intervals)) if click_intervals else 0
     )
-    request_count = len(events)
+    timing_variation_coefficient = (
+        pstdev(click_intervals) / average_inter_click_ms
+        if len(click_intervals) >= 4 and average_inter_click_ms > 0
+        else None
+    )
+    request_count = observed_requests
     request_frequency = request_count * 60_000 / duration_ms if duration_ms >= 10_000 else 0
     account_related = any(
         any(token in identifier.lower() for token in ("account", "auth", "login", "signin"))
@@ -103,8 +123,12 @@ def analyze_and_record(db: OrmSession, session: Session) -> tuple[RiskAnalysis, 
         "click_count": observed_clicks,
         "page_visit_count": observed_pages,
         "average_inter_click_ms": average_inter_click_ms,
+        "timing_interval_count": len(click_intervals),
+        "timing_variation_coefficient": timing_variation_coefficient,
         "form_submission_count": observed_forms,
         "repeated_action_count": repeated_actions,
+        "repeated_page_visit_count": repeated_pages,
+        "repeated_navigation_transition_count": repeated_navigation_transitions,
         "repeated_form_submission_count": repeated_forms,
         "request_count": request_count,
         "request_frequency_per_minute": request_frequency,
@@ -112,6 +136,11 @@ def analyze_and_record(db: OrmSession, session: Session) -> tuple[RiskAnalysis, 
         "meaningful_event_count": observed_clicks + observed_pages + observed_forms,
         "account_related_repetition": account_related,
     }
+    return feature_values
+
+
+def analyze_and_record(db: OrmSession, session: Session) -> tuple[RiskAnalysis, SecurityDecision]:
+    feature_values = derive_behavior_features(db, session)
     settings = get_settings()
     artifact_path = settings.ml_model_path or default_artifact_path()
     try:
@@ -141,6 +170,7 @@ def analyze_and_record(db: OrmSession, session: Session) -> tuple[RiskAnalysis, 
             "explanation": analysis.explanation,
             "recommended_response": analysis.recommended_response,
             "ml_prediction": analysis.ml_prediction,
+            "behavioral_factors": analysis.behavioral_factors,
         },
     )
     decision = SecurityDecision(

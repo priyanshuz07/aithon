@@ -14,7 +14,7 @@ Browser pages + privacy-aware SDK
   -> Dashboard summary, scenario lab, and session decision history
 ```
 
-The browser may send an aggregate snapshot for display, but risk scores are computed from accepted database event rows and server-controlled receipt times. Clients cannot provide a risk score or select an action. The recommendation and actual response are stored separately.
+The browser may send an aggregate snapshot for display, but risk scores are computed from accepted database event rows. The SDK records privacy-safe `fetch`/XHR observations without URLs, click timestamps, action identifiers, and page identifiers. Action intervals use SDK-reported event timestamps as telemetry, not as trusted proof of user behavior. A new accepted event batch triggers analysis; duplicate-only batches do not change the score or decision history. Clients cannot provide a risk score or select an action. The recommendation and actual response are stored separately.
 
 ## Technologies
 
@@ -98,7 +98,9 @@ The model contributes at most 15 points to the rule score, and is not sufficient
 
 ## Risk and adaptive response
 
-Rule-based levels default to low `0-29`, medium `30-59`, high `60-79`, and critical `80-100`. Responses map independently: allow, demo verification challenge, configurable delay, and demo block page. Categories are estimated behavioral patterns, not assertions about a user's intent. Thresholds are configured with `RISK_MEDIUM_THRESHOLD`, `RISK_HIGH_THRESHOLD`, and `RISK_CRITICAL_THRESHOLD`.
+Rule-based levels default to low `0-29`, medium `30-59`, high `60-79`, and critical `80-100`. The deterministic score adds explainable points for request rate, click/page frequency, repeated actions and page visits, action timing, and combined activity patterns, then caps the result at 100. When a compatible synthetic-data model artifact is available, its suspicious probability may add at most 15 points; without it, scoring is rule-based only. These are behavioral estimates, not assertions about a user's intent. Thresholds are configured with `RISK_MEDIUM_THRESHOLD`, `RISK_HIGH_THRESHOLD`, and `RISK_CRITICAL_THRESHOLD`.
+
+The session detail panel explains each analysis with request-frequency and repetition tiers, timing and navigation states, observed rule signals with their score contributions, and the recommended versus applied firewall response. Factors with too little telemetry are labeled insufficient rather than normal. The optional classifier is trained on synthetic data and is not calibrated for confidence estimates, so the interface does not present its probability as a confidence score.
 
 `SAFE_DEMO_MODE` must remain `true`. Responses are enforced only in the local demo interface; the API, collector, and dashboard remain accessible for recovery/review. The arithmetic challenge is a human-verifiable prototype, not a production CAPTCHA. Critical response opens `frontend/blocked.html` with a persisted request ID and explanation; it is not a network-level block.
 
@@ -107,14 +109,18 @@ Administrator review is optional. Set `ADMIN_API_KEY` to a private value at leas
 ## AITHON demonstration
 
 1. Start the backend and frontend using the commands above.
-2. Open the dashboard and go to **Scenario lab**.
-3. Run each server-defined synthetic profile:
+2. Open the dashboard and go to **Live Demo**.
+3. Select **Normal User**, **Automated Bot**, or **Adaptive Bot**, then press **Run Analysis**. The demo flow, timeline, decision panel, and local metrics update from that preset.
+4. Expand **Server-generated scenario API** to run each persisted backend profile:
    - A: normal browsing -> low risk / allow.
    - B: repetitive scraping-like page/request burst -> medium risk / challenge.
    - C: high-frequency repeated activity -> high risk / delay.
    - D: critical simulated combined signals -> critical risk / block.
-4. Each result shows its score, estimated behavioral pattern, rule/model contributions, explanation, and recommended/actual response. Select the persisted session for its complete feature values and decision history.
 5. The challenge scenario can also be demonstrated on a guarded storefront interaction after a session's server-computed response is `challenge`.
+
+For a judge-facing walkthrough, use **Normal User**, **Automated Bot**, or **Adaptive Bot** in the dashboard's **Live Demo** panel, then press **Run Analysis**. This self-contained guided demo uses explicit preset signals and a short animated analysis flow; it does not call an ML service or claim to be a live prediction. The profiles currently total 12/100 (ALLOW), 92/100 (BLOCK), and 54/100 (REVIEW) from their displayed contribution points. Its thresholds are 0-29 ALLOW, 30-69 REVIEW, and 70-100 BLOCK. Dashboard metrics, score history, decisions, event list, and timeline update only from runs performed in this page. **Reset Demo** clears this local demo history and leaves backend sessions untouched.
+
+The expandable **Server-generated scenario API** and **Live API event-stream simulations** preserve the existing backend demonstrations. The latter creates a separately tagged session and submits timed click/navigation/request events through the regular collector; scores and responses come from the current backend analysis. Its **Stop simulation** preserves the partial session, and **Reset output** only clears its panel. Those sessions are marked `SIM` in the database-backed dashboard.
 
 Only the named scenario IDs are accepted by the demo endpoint. Their events and timestamps are generated locally by the server; they do not use real users or send traffic to outside sites.
 

@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.routes.adaptive import router as adaptive_router
+from app.api.routes.behavior import router as behavior_router
 from app.api.routes.dashboard import router as dashboard_router
 from app.core.config import Settings, get_settings
 from app.db.base import Base
@@ -37,6 +38,7 @@ class AdaptiveResponseTests(unittest.TestCase):
             admin_api_key="unit-test-administrator-key-123456789",
         )
         self.app = FastAPI()
+        self.app.include_router(behavior_router)
         self.app.include_router(adaptive_router)
         self.app.include_router(dashboard_router)
 
@@ -94,7 +96,7 @@ class AdaptiveResponseTests(unittest.TestCase):
                 average_interval = int(profile.get("average_inter_click_ms", 0))
                 request_rate = float(profile.get("request_frequency_per_minute", 0))
                 event_target = round(request_rate * duration / 60_000)
-                fillers = max(0, event_target - click_count - page_count - form_count)
+                fillers = max(0, event_target)
                 events = []
                 for index in range(click_count):
                     received_at = started_at + timedelta(milliseconds=index * average_interval)
@@ -105,7 +107,7 @@ class AdaptiveResponseTests(unittest.TestCase):
                 for index in range(form_count):
                     events.append(("interaction.form_submit", {"form_id": f"form.{index}"}, started_at))
                 for _ in range(fillers):
-                    events.append(("session.start", {}, started_at))
+                    events.append(("network.request", {"resource_type": "fetch"}, started_at))
                 db.add_all(
                     SecurityEvent(
                         session_id=session.id,
@@ -241,6 +243,197 @@ class AdaptiveResponseTests(unittest.TestCase):
         self.assertEqual(access["risk_score"], 0)
         self.assertEqual(access["recommended_action"], "allow")
         self.assertEqual(access["actual_response"], "allow")
+
+    def test_new_event_batches_recalculate_but_duplicate_batches_do_not(self) -> None:
+        session_id = self.create_session({"session_duration_ms": 120_000}, include_events=False)
+        base_time = datetime.now(timezone.utc) - timedelta(seconds=10)
+
+        def event(event_type: str, payload: dict, occurred_at: datetime) -> dict:
+            return {
+                "event_id": str(uuid4()),
+                "type": event_type,
+                "at": occurred_at.isoformat(),
+                "payload": payload,
+            }
+
+        baseline_events = [
+            event("navigation.page_view", {"page": "home"}, base_time),
+            event("navigation.page_view", {"page": "catalog"}, base_time + timedelta(milliseconds=100)),
+            event("network.request", {"resource_type": "fetch"}, base_time),
+        ]
+
+        def send_batch(events: list[dict]) -> dict:
+            response = self.client.post(
+                "/api/events",
+                json={"session_id": session_id, "events": events},
+            )
+            self.assertIn(response.status_code, (200, 201), response.text)
+            return response.json()
+
+        accepted = send_batch(baseline_events)
+        self.assertEqual(accepted["accepted_count"], 3)
+        normal = self.client.get(f"/api/session/{session_id}/access").json()
+        self.assertEqual(normal["risk_score"], 0)
+        self.assertEqual(normal["risk_level"], "low")
+        self.assertEqual(normal["behavioral_factors"]["request_frequency"]["level"], "low")
+        self.assertEqual(normal["behavioral_factors"]["navigation_pattern"]["status"], "normal")
+
+        suspicious_events = []
+        for index in range(20):
+            occurred_at = base_time + timedelta(milliseconds=index * 50)
+            suspicious_events.append(
+                event("interaction.click", {"action_id": "cart.add"}, occurred_at)
+            )
+            suspicious_events.append(
+                event("navigation.page_view", {"page": "catalog"}, occurred_at)
+            )
+        suspicious_events.extend(
+            event("network.request", {"resource_type": "fetch"}, base_time)
+            for _ in range(100)
+        )
+        for offset in range(0, len(suspicious_events), 50):
+            send_batch(suspicious_events[offset : offset + 50])
+
+        suspicious = self.client.get(f"/api/session/{session_id}/access").json()
+        self.assertGreaterEqual(suspicious["risk_score"], 60)
+        self.assertEqual(suspicious["risk_level"], "high")
+        self.assertEqual(suspicious["recommended_action"], "delay")
+        self.assertIn("repeated_navigation_sequence", [signal["name"] for signal in suspicious["signals"]])
+        self.assertEqual(suspicious["behavioral_factors"]["action_repetition"]["level"], "high")
+        self.assertEqual(suspicious["behavioral_factors"]["timing_variation"]["status"], "abnormal")
+        self.assertEqual(suspicious["behavioral_factors"]["navigation_pattern"]["status"], "abnormal")
+        details = self.client.get(f"/api/dashboard/sessions/{session_id}").json()
+        self.assertEqual(details["behavioral_factors"], suspicious["behavioral_factors"])
+
+        with self.session_factory() as db:
+            session_pk = db.scalar(
+                select(SessionIdentity.session_id).where(SessionIdentity.public_id == session_id)
+            )
+            decision_count = db.query(SecurityDecision).filter_by(session_id=session_pk).count()
+        duplicate = send_batch(baseline_events)
+        self.assertEqual(duplicate["accepted_count"], 0)
+        self.assertEqual(duplicate["duplicate_count"], 3)
+        unchanged = self.client.get(f"/api/session/{session_id}/access").json()
+        self.assertEqual(unchanged["risk_score"], suspicious["risk_score"])
+        with self.session_factory() as db:
+            self.assertEqual(
+                db.query(SecurityDecision).filter_by(session_id=session_pk).count(),
+                decision_count,
+            )
+
+        analysis_response = self.client.post(f"/api/session/{session_id}/analyze")
+        self.assertEqual(analysis_response.status_code, 200, analysis_response.text)
+        self.assertEqual(
+            analysis_response.json()["behavioral_factors"],
+            suspicious["behavioral_factors"],
+        )
+
+    def test_labeled_simulation_modes_use_the_behavior_pipeline(self) -> None:
+        modes = ("normal_user", "bot_attack", "adaptive_bot")
+        adaptive_intervals = [420, 1180, 660, 1450, 510, 930, 380, 1270, 740, 560, 1390, 810]
+        adaptive_actions = ["search", "open", "compare", "filter", "review", "return", "sort", "expand", "close", "view", "back", "next"]
+
+        for mode in modes:
+            with self.subTest(mode=mode):
+                session_id = str(uuid4())
+                started = self.client.post(
+                    "/api/session/start",
+                    json={
+                        "session_id": session_id,
+                        "sdk_version": "simulation.1",
+                        "simulation_mode": mode,
+                    },
+                )
+                self.assertEqual(started.status_code, 201, started.text)
+                now = datetime.now(timezone.utc)
+                anchor = now - timedelta(seconds=25)
+                with self.session_factory() as db:
+                    session_pk = db.scalar(
+                        select(SessionIdentity.session_id).where(SessionIdentity.public_id == session_id)
+                    )
+                    session = db.get(Session, session_pk)
+                    session.started_at = now - timedelta(seconds=30)
+                    session.last_seen_at = session.started_at
+                    db.commit()
+
+                events = [
+                    {
+                        "event_id": str(uuid4()),
+                        "type": "session.start",
+                        "at": anchor.isoformat(),
+                        "payload": {"sdk_session_id": session_id, "sdk_version": "simulation.1"},
+                    }
+                ]
+                action_count = 8 if mode == "normal_user" else 32 if mode == "bot_attack" else 24
+                elapsed_ms = 0
+                for index in range(action_count):
+                    if index:
+                        if mode == "normal_user":
+                            elapsed_ms += [3200, 3400, 3100, 3300, 3500, 3000, 3400][(index - 1) % 7]
+                        elif mode == "bot_attack":
+                            elapsed_ms += 330
+                        else:
+                            elapsed_ms += adaptive_intervals[(index - 1) % len(adaptive_intervals)]
+                    occurred_at = anchor + timedelta(milliseconds=elapsed_ms)
+                    should_click = (
+                        index in (0, 3, 6) if mode == "normal_user"
+                        else mode == "bot_attack" or index % 5 != 3
+                    )
+                    should_visit = (
+                        index in (0, 4) if mode == "normal_user"
+                        else index % 4 == 0 if mode == "bot_attack"
+                        else index % 3 != 1
+                    )
+                    if should_click:
+                        action_id = (
+                            f"normal.action.{index}" if mode == "normal_user"
+                            else "bot.repeat.search" if mode == "bot_attack"
+                            else "adaptive." + adaptive_actions[(index * 5 + index // 4) % len(adaptive_actions)]
+                        )
+                        events.append({
+                            "event_id": str(uuid4()),
+                            "type": "interaction.click",
+                            "at": occurred_at.isoformat(),
+                            "payload": {"action_id": action_id},
+                        })
+                    if should_visit:
+                        page_id = (
+                            ["home", "catalog", "product", "support"][index % 4] if mode == "normal_user"
+                            else "bot.catalog" if mode == "bot_attack"
+                            else f"adaptive.page.{(index * 7 + index // 4 * 3) % 11}"
+                        )
+                        events.append({
+                            "event_id": str(uuid4()),
+                            "type": "navigation.page_view",
+                            "at": occurred_at.isoformat(),
+                            "payload": {"page": page_id},
+                        })
+                    events.append({
+                        "event_id": str(uuid4()),
+                        "type": "network.request",
+                        "at": occurred_at.isoformat(),
+                        "payload": {"resource_type": "fetch"},
+                    })
+
+                for offset in range(0, len(events), 50):
+                    response = self.client.post(
+                        "/api/events",
+                        json={"session_id": session_id, "events": events[offset : offset + 50]},
+                    )
+                    self.assertIn(response.status_code, (200, 201), response.text)
+
+                access = self.client.get(f"/api/session/{session_id}/access")
+                self.assertEqual(access.status_code, 200, access.text)
+                assessment = access.json()
+                self.assertIn(assessment["risk_score"], range(101))
+                if mode == "normal_user":
+                    self.assertLess(assessment["risk_score"], 30)
+                else:
+                    self.assertGreaterEqual(assessment["risk_score"], 30)
+
+                details = self.client.get(f"/api/dashboard/sessions/{session_id}").json()
+                self.assertEqual(details["simulation_mode"], mode)
+                self.assertEqual(details["risk_score"], assessment["risk_score"])
 
     def test_loaded_ml_prediction_is_returned_persisted_and_combined(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

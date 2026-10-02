@@ -85,9 +85,12 @@ def start_session(
         response.status_code = status.HTTP_200_OK
         return session_start_response(existing, public_id, created=False)
 
+    attributes = {"client_session_id": str(public_id), "sdk_version": payload.sdk_version}
+    if payload.simulation_mode is not None:
+        attributes["simulation_mode"] = payload.simulation_mode
     session = Session(
         user_agent=None,
-        attributes={"client_session_id": str(public_id), "sdk_version": payload.sdk_version},
+        attributes=attributes,
     )
     db.add(session)
     try:
@@ -155,10 +158,11 @@ def ingest_events(
             db.add(EventDeduplication(session_id=session.id, event_id=event_id))
             accepted_count += 1
 
-        attributes: dict[str, Any] = dict(session.attributes or {})
-        attributes["latest_behavior_features"] = payload.features.model_dump()
-        session.attributes = attributes
-        session.last_seen_at = received_at
+        if accepted_count:
+            attributes: dict[str, Any] = dict(session.attributes or {})
+            attributes["latest_behavior_features"] = payload.features.model_dump()
+            session.attributes = attributes
+            session.last_seen_at = received_at
         db.commit()
     except IntegrityError as exc:
         db.rollback()
@@ -184,6 +188,9 @@ def ingest_events(
                 received_at=received_at,
             )
         raise HTTPException(status_code=409, detail="Event ID conflicts with an existing event") from exc
+
+    if accepted_count:
+        analyze_and_record(db, session)
 
     total = db.scalar(
         select(func.count(SecurityEvent.id)).where(SecurityEvent.session_id == session.id)
@@ -252,6 +259,7 @@ def analyze_session(
         explanation=analysis.explanation,
         recommended_response=analysis.recommended_response,
         ml_prediction=analysis.ml_prediction,
+        behavioral_factors=analysis.behavioral_factors,
     )
 
 

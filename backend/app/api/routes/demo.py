@@ -20,7 +20,7 @@ _SCENARIOS = {
         "clicks": 4,
         "pages": 3,
         "forms": 1,
-        "total_events": 12,
+        "request_count": 12,
         "click_interval_ms": 20_000,
         "repeated_click": False,
         "repeated_form": False,
@@ -31,7 +31,7 @@ _SCENARIOS = {
         "clicks": 2,
         "pages": 20,
         "forms": 0,
-        "total_events": 150,
+        "request_count": 150,
         "click_interval_ms": 15_000,
         "repeated_click": False,
         "repeated_form": False,
@@ -42,7 +42,7 @@ _SCENARIOS = {
         "clicks": 20,
         "pages": 5,
         "forms": 0,
-        "total_events": 80,
+        "request_count": 80,
         "click_interval_ms": 100,
         "repeated_click": True,
         "repeated_form": False,
@@ -53,7 +53,7 @@ _SCENARIOS = {
         "clicks": 60,
         "pages": 20,
         "forms": 8,
-        "total_events": 120,
+        "request_count": 120,
         "click_interval_ms": 100,
         "repeated_click": True,
         "repeated_form": True,
@@ -94,8 +94,8 @@ def create_demo_scenario(
                 "average_inter_click_ms": profile["click_interval_ms"],
                 "form_submission_count": profile["forms"],
                 "repeated_action_count": profile["clicks"] - 1 if profile["repeated_click"] else 0,
-                "request_count": profile["total_events"],
-                "request_frequency_per_minute": profile["total_events"] * 60_000 / profile["duration_ms"],
+                "request_count": profile["request_count"],
+                "request_frequency_per_minute": profile["request_count"] * 60_000 / profile["duration_ms"],
                 "session_duration_ms": profile["duration_ms"],
                 "pending_event_count": 0,
             },
@@ -151,20 +151,14 @@ def create_demo_scenario(
         )
         deduplications.append(EventDeduplication(session_id=session.id, event_id=event_id))
 
-    filler_count = profile["total_events"] - len(events)
-    if filler_count < 0:
-        raise HTTPException(status_code=500, detail="Demo profile is invalid")
-    for index in range(filler_count):
+    for index in range(profile["request_count"]):
         event_id = str(uuid4())
         received_at = started_at + timedelta(milliseconds=index * 250)
         events.append(
             SecurityEvent(
                 session_id=session.id,
-                event_type="session.start",
-                payload={
-                    "event_id": event_id,
-                    "data": {"sdk_session_id": str(public_id), "sdk_version": "synthetic-demo"},
-                },
+                event_type="network.request",
+                payload={"event_id": event_id, "data": {"resource_type": "fetch"}},
                 occurred_at=received_at,
                 received_at=received_at,
             )
