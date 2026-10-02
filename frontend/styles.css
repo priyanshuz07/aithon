@@ -354,9 +354,10 @@ form .button { margin-top: 20px; }
 .status-pill.is-online { border-color: rgba(83, 213, 197, .33); color: #76dcca; background: rgba(83, 213, 197, .07); }
 .status-pill.is-review { border-color: rgba(232, 180, 92, .36); color: #e9c276; background: rgba(232, 180, 92, .08); }
 .status-pill.is-offline { border-color: rgba(255, 121, 143, .35); color: #ff9ca9; background: rgba(255, 121, 143, .07); }
-.overview-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .overview-card { position: relative; min-width: 0; min-height: 119px; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid #253149; padding: 15px 13px 12px; }
-.overview-card:last-child { border-right: 0; }
+.overview-card:nth-child(4n) { border-right: 0; }
+.overview-card:nth-child(-n + 4) { border-bottom: 1px solid #253149; }
 .overview-card > span { color: #9ba8bf; font-size: 9px; white-space: nowrap; }
 .overview-card > strong { color: #edf3ff; font: 500 25px/1 var(--display); }
 .overview-card > small { color: #72819a; font-size: 8px; line-height: 1.4; }
@@ -558,8 +559,8 @@ form .button { margin-top: 20px; }
 
 @media (max-width: 1300px) {
   .overview-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .overview-card:nth-child(3) { border-right: 0; }
-  .overview-card:nth-child(-n + 3) { border-bottom: 1px solid #253149; }
+  .overview-card:nth-child(3n) { border-right: 0; }
+  .overview-card:nth-child(-n + 6) { border-bottom: 1px solid #253149; }
   .overview-card:nth-child(4) { border-right: 1px solid #253149; }
 }
 
@@ -592,6 +593,7 @@ form .button { margin-top: 20px; }
   .overview-status { width: 100%; justify-content: space-between; }
   .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .overview-card { min-height: 105px; border-bottom: 1px solid #253149; }
+  .overview-card:nth-child(3n) { border-right: 1px solid #253149; }
   .overview-card:nth-child(odd) { border-right: 1px solid #253149; }
   .overview-card:nth-child(even) { border-right: 0; }
   .overview-card:nth-last-child(-n + 2) { border-bottom: 0; }

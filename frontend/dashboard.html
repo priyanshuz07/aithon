@@ -36,7 +36,7 @@
       </aside>
       <main class="dashboard-main" id="overview">
         <div class="dashboard-topline">
-          <div><p class="eyebrow">LIVE SECURITY DASHBOARD</p><h1>Security <span>dashboard</span></h1><p class="dashboard-subtitle">Persisted session risk, firewall decisions, and behavior events.</p></div>
+          <div><p class="eyebrow">LIVE SECURITY DASHBOARD / SIMULATED DEMO</p><h1>Security <span>dashboard</span></h1><p class="dashboard-subtitle">Live simulated sessions, behavior signals, and firewall decisions.</p></div>
           <div class="dashboard-controls">
             <label class="refresh-control"><span>Refresh</span><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="10" selected>10 seconds</option><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">60 seconds</option><option value="0">Off</option></select></label>
             <span id="refresh-state" class="refresh-state">Auto refresh every 10s</span>
@@ -49,12 +49,14 @@
           <section class="overview-section" aria-label="Overview metrics">
             <div class="overview-heading"><div class="live-heading"><span class="live-dot"></span><span>LIVE OVERVIEW</span></div><div class="overview-status"><span id="api-state" class="status-pill is-online">CONNECTING</span><span id="last-updated">Awaiting data</span></div></div>
             <div class="overview-grid">
-              <article class="overview-card accent-blue"><span>Active Sessions</span><strong id="overview-active">--</strong><small>Seen in the last 5 minutes</small><i data-lucide="radio-tower"></i></article>
+              <article class="overview-card overview-total"><span>Total Sessions</span><strong id="overview-total">--</strong><small>Simulated demo history</small><i data-lucide="layers-3"></i></article>
+              <article class="overview-card accent-blue"><span>Active Users</span><strong id="overview-active">--</strong><small>Currently active in this demo</small><i data-lucide="radio-tower"></i></article>
               <article class="overview-card"><span>Normal Sessions</span><strong id="overview-normal">--</strong><small>Latest assessment is normal</small><i data-lucide="shield-check"></i></article>
               <article class="overview-card accent-amber"><span>Suspicious Sessions</span><strong id="overview-suspicious">--</strong><small>Medium risk and above</small><i data-lucide="scan-eye"></i></article>
               <article class="overview-card accent-red"><span>Blocked Sessions</span><strong id="overview-blocked">--</strong><small>Latest response is block</small><i data-lucide="ban"></i></article>
               <article class="overview-card overview-total"><span>Average Risk Score</span><strong id="overview-average-risk">--</strong><small>Latest score per analyzed session</small><i data-lucide="chart-no-axes-combined"></i></article>
               <article class="overview-card accent-orange"><span>Threats Detected</span><strong id="overview-threats">--</strong><small>Sessions at medium risk or higher</small><i data-lucide="shield-alert"></i></article>
+              <article class="overview-card"><span>Requests Analyzed</span><strong id="overview-requests">--</strong><small>Simulated request decisions</small><i data-lucide="scan-line"></i></article>
             </div>
             <div class="monitoring-line"><span class="monitoring-ring"></span><span id="monitoring-copy">Checking API and database</span><span id="last-activity">No recorded activity</span></div>
           </section>
@@ -62,9 +64,11 @@
           <section class="dashboard-section" id="traffic">
             <div class="section-title-row"><div><p class="eyebrow">TRAFFIC ANALYTICS / LAST 24 HOURS</p><h2>Behavior over time</h2></div><span class="section-meta">LIVE DATABASE</span></div>
             <div class="analytics-grid">
-              <article class="chart-panel chart-panel-wide"><div class="chart-heading"><div><h3>Risk score history</h3><p>Persisted score changes, ordered by analysis time</p></div><span class="chart-live-mark">RECENT</span></div><div class="chart-canvas"><canvas id="risk-history-chart" aria-label="Persisted risk scores over time" role="img"></canvas><p id="risk-history-empty" class="chart-empty" hidden>No risk scores have been recorded yet.</p><p class="chart-unavailable" hidden>Chart library unavailable. Risk history remains in session details.</p></div></article>
-              <article class="chart-panel"><div class="chart-heading"><div><h3>Risk levels</h3><p>Latest assessment per session</p></div></div><div class="chart-canvas chart-canvas-doughnut"><canvas id="risk-chart" aria-label="Risk level distribution" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
-              <article class="chart-panel"><div class="chart-heading"><div><h3>Adaptive responses</h3><p>Latest recorded response per session</p></div></div><div class="chart-canvas chart-canvas-doughnut"><canvas id="response-chart" aria-label="Adaptive response distribution" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
+              <article class="chart-panel chart-panel-wide"><div class="chart-heading"><div><h3>Risk score history</h3><p>Simulated score changes, refreshed live</p></div><span class="chart-live-mark">DEMO LIVE</span></div><div class="chart-canvas"><canvas id="risk-history-chart" aria-label="Simulated risk scores over time" role="img"></canvas><p id="risk-history-empty" class="chart-empty" hidden>No risk scores have been recorded yet.</p><p class="chart-unavailable" hidden>Chart library unavailable. Risk history remains in session details.</p></div></article>
+              <article class="chart-panel"><div class="chart-heading"><div><h3>Session outcomes</h3><p>Normal, suspicious, and blocked</p></div></div><div class="chart-canvas chart-canvas-doughnut"><canvas id="risk-chart" aria-label="Session outcome distribution" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
+              <article class="chart-panel"><div class="chart-heading"><div><h3>Firewall decisions</h3><p>Allow, review, challenge, and block</p></div></div><div class="chart-canvas chart-canvas-doughnut"><canvas id="response-chart" aria-label="Firewall decision distribution" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
+              <article class="chart-panel chart-panel-wide"><div class="chart-heading"><div><h3>Traffic activity</h3><p>Requests analyzed per interval</p></div><span class="chart-live-mark">SIMULATED</span></div><div class="chart-canvas"><canvas id="traffic-chart" aria-label="Simulated request activity" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
+              <article class="chart-panel chart-panel-wide"><div class="chart-heading"><div><h3>Threat detections</h3><p>Suspicious signals identified over time</p></div><span class="chart-live-mark">SIMULATED</span></div><div class="chart-canvas"><canvas id="threat-chart" aria-label="Simulated threat detections" role="img"></canvas><p class="chart-unavailable" hidden>Chart library unavailable.</p></div></article>
             </div>
             <div class="decision-stats-panel"><div><p class="eyebrow">FIREWALL DECISIONS / LATEST PER SESSION</p><span class="decision-stats-note">Review counts persisted delay decisions from the existing backend action schema.</span></div><div class="decision-stats-grid">
               <article><span class="decision-dot decision-dot-allow"></span><span>Allow</span><strong id="decision-allow-count">0</strong></article>
@@ -93,7 +97,7 @@
           </section>
 
           <section class="dashboard-section" id="recent-events">
-            <div class="section-title-row"><div><p class="eyebrow">PERSISTED EVENT RECORDS</p><h2>Recent security events</h2></div><span id="recent-event-count" class="section-meta">Loading events</span></div>
+            <div class="section-title-row"><div><p class="eyebrow">SIMULATED LIVE ACTIVITY</p><h2>Recent security events</h2></div><span id="recent-event-count" class="section-meta">Starting demo feed</span></div>
             <div id="recent-event-list" class="recent-event-list"><p class="loading-state">Loading persisted events...</p></div>
           </section>
 
@@ -135,7 +139,7 @@
                   <div class="guided-action-display" id="guided-action-display">SELECT A MODE</div>
                   <p id="guided-decision-reason" class="guided-decision-reason">The selected demo outcome will appear here.</p>
                   <div class="guided-action-legend" aria-label="Demo decision outcomes"><span data-guided-action="ALLOW">ALLOW</span><span data-guided-action="REVIEW">REVIEW</span><span data-guided-action="CHALLENGE">CHALLENGE</span><span data-guided-action="BLOCK">BLOCK</span></div>
-                  <p class="guided-threshold-note">0–29 ALLOW · 30–69 REVIEW · 70–100 BLOCK</p>
+                  <p class="guided-threshold-note">0–39 ALLOW · 40–69 CHALLENGE / REVIEW · 70–100 BLOCK</p>
                 </aside>
               </div>
               <div class="guided-flow-wrap">

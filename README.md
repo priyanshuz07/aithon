@@ -109,8 +109,8 @@ Administrator review is optional. Set `ADMIN_API_KEY` to a private value at leas
 ## AITHON demonstration
 
 1. Start the backend and frontend using the commands above.
-2. Open the dashboard and go to **Live Demo**.
-3. Select **Normal User**, **Automated Bot**, or **Adaptive Bot**, then press **Run Analysis**. The demo flow, timeline, decision panel, and local metrics update from that preset.
+2. Open the dashboard. A local simulated overview, session list, event feed, and five charts start immediately, including when the API is offline. Values are randomized on each page load and update every three seconds.
+3. In **Live Demo**, select **Normal User**, **Automated Bot**, or **Adaptive Bot** to switch the live profile and risk decision. Press **Run Analysis** to walk through the animated explanation stages; **Reset Demo** starts a fresh populated simulation.
 4. Expand **Server-generated scenario API** to run each persisted backend profile:
    - A: normal browsing -> low risk / allow.
    - B: repetitive scraping-like page/request burst -> medium risk / challenge.
@@ -118,7 +118,7 @@ Administrator review is optional. Set `ADMIN_API_KEY` to a private value at leas
    - D: critical simulated combined signals -> critical risk / block.
 5. The challenge scenario can also be demonstrated on a guarded storefront interaction after a session's server-computed response is `challenge`.
 
-For a judge-facing walkthrough, use **Normal User**, **Automated Bot**, or **Adaptive Bot** in the dashboard's **Live Demo** panel, then press **Run Analysis**. This self-contained guided demo uses explicit preset signals and a short animated analysis flow; it does not call an ML service or claim to be a live prediction. The profiles currently total 12/100 (ALLOW), 92/100 (BLOCK), and 54/100 (REVIEW) from their displayed contribution points. Its thresholds are 0-29 ALLOW, 30-69 REVIEW, and 70-100 BLOCK. Dashboard metrics, score history, decisions, event list, and timeline update only from runs performed in this page. **Reset Demo** clears this local demo history and leaves backend sessions untouched.
+For a judge-facing walkthrough, use **Normal User**, **Automated Bot**, or **Adaptive Bot** in the dashboard's **Live Demo** panel. The self-contained simulation uses preset behavior explanations and randomized scenario-bounded risk scores; it does not call an ML service or claim to be a live prediction. Its thresholds are 0-39 ALLOW, 40-69 CHALLENGE / REVIEW, and 70-100 BLOCK. The main overview and charts continue updating independently of **Run Analysis**. **Reset Demo** reinitializes populated local demo data and leaves backend sessions untouched.
 
 The expandable **Server-generated scenario API** and **Live API event-stream simulations** preserve the existing backend demonstrations. The latter creates a separately tagged session and submits timed click/navigation/request events through the regular collector; scores and responses come from the current backend analysis. Its **Stop simulation** preserves the partial session, and **Reset output** only clears its panel. Those sessions are marked `SIM` in the database-backed dashboard.
 

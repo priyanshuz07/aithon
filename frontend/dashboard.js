@@ -25,6 +25,10 @@
   let guidedDemoToken = 0;
   let guidedDemoSequence = 0;
   let guidedDemoRuns = [];
+  let liveDemoMode = "adaptive_bot";
+  let liveDemoTimer = null;
+  let liveDemoState = null;
+  let liveDemoSessionRecords = {};
   const simulationResult = document.querySelector("#behavior-simulation-result");
   const simulationStatus = document.querySelector("#behavior-simulation-status");
   const stopSimulationButton = document.querySelector("#stop-behavior-simulation");
@@ -250,7 +254,7 @@
   function renderRecentEvents(data) {
     const events = data.recent_events || [];
     const container = document.querySelector("#recent-event-list");
-    document.querySelector("#recent-event-count").textContent = events.length + " recent persisted events";
+    document.querySelector("#recent-event-count").textContent = events.length + (data.is_demo ? " recent simulated events" : " recent persisted events");
     if (!events.length) {
       container.innerHTML = '<div class="empty-state"><span class="empty-mark">--</span><p>No stored behavior events yet.</p></div>';
       return;
@@ -270,7 +274,12 @@
   function renderChart(canvasId, config) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || typeof window.Chart !== "function") return;
-    if (charts[canvasId]) charts[canvasId].destroy();
+    if (charts[canvasId]) {
+      charts[canvasId].data = config.data;
+      charts[canvasId].options = config.options;
+      charts[canvasId].update();
+      return;
+    }
     charts[canvasId] = new window.Chart(canvas, config);
   }
 
@@ -335,9 +344,9 @@
     const risk = data.risk_distribution || {};
     renderChart("risk-chart", {
       type: "doughnut",
-      data: { labels: ["Low", "Medium", "High", "Critical", "Not analyzed"], datasets: [{
-        data: [risk.low || 0, risk.medium || 0, risk.high || 0, risk.critical || 0, risk.not_analyzed || 0],
-        backgroundColor: ["#53d5c5", "#e8b45c", "#ff8a68", "#fb6687", "#35435e"],
+      data: { labels: ["Normal", "Suspicious", "Blocked"], datasets: [{
+        data: [risk.normal || 0, risk.suspicious || 0, risk.blocked || 0],
+        backgroundColor: ["#53d5c5", "#e8b45c", "#fb6687"],
         borderWidth: 0,
         spacing: 3,
       }] },
@@ -354,6 +363,22 @@
       }] },
       options: doughnutOptions,
     });
+    function renderActivityChart(canvasId, points, label, color, fill) {
+      const options = chartOptions();
+      options.elements = { line: { tension: 0.35, borderWidth: 2 }, point: { radius: 1, hoverRadius: 4 } };
+      renderChart(canvasId, {
+        type: "line",
+        data: {
+          labels: (points || []).map(function (point) {
+            return new Date(point.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+          }),
+          datasets: [{ label: label, data: (points || []).map(function (point) { return point.value; }), borderColor: color, backgroundColor: fill, fill: true }],
+        },
+        options: options,
+      });
+    }
+    renderActivityChart("traffic-chart", data.activity_history, "Requests", "#77aaff", "rgba(119,170,255,.12)");
+    renderActivityChart("threat-chart", data.threat_history, "Threats", "#ff9d73", "rgba(255,157,115,.12)");
     document.querySelectorAll(".chart-unavailable").forEach(function (element) {
       element.hidden = typeof window.Chart === "function";
     });
@@ -376,20 +401,22 @@
   }
 
   function renderOverview(data) {
+    document.querySelector("#overview-total").textContent = data.total_sessions;
     document.querySelector("#overview-average-risk").textContent = data.average_risk_score == null ? "--" : data.average_risk_score;
     document.querySelector("#overview-normal").textContent = data.normal_sessions;
     document.querySelector("#overview-suspicious").textContent = data.suspicious_sessions;
     document.querySelector("#overview-blocked").textContent = data.blocked_sessions;
     document.querySelector("#overview-threats").textContent = data.threats_detected;
     document.querySelector("#overview-active").textContent = data.active_sessions;
+    document.querySelector("#overview-requests").textContent = Number(data.requests_analyzed || 0).toLocaleString();
     document.querySelector("#nav-session-count").textContent = data.active_sessions;
-    document.querySelector("#nav-alert-count").textContent = data.suspicious_sessions;
-    document.querySelector("#sidebar-api-state").textContent = data.monitoring_status.toUpperCase();
-    document.querySelector(".sidebar-pulse").classList.toggle("is-offline", data.monitoring_status !== "online");
-    document.querySelector("#monitoring-copy").textContent = data.monitoring_status === "online" ? "API and database connected" : "Monitoring unavailable";
+    document.querySelector("#nav-alert-count").textContent = data.threats_detected;
+    document.querySelector("#sidebar-api-state").textContent = data.is_demo ? "DEMO LIVE" : data.monitoring_status.toUpperCase();
+    document.querySelector(".sidebar-pulse").classList.toggle("is-offline", !data.is_demo && data.monitoring_status !== "online");
+    document.querySelector("#monitoring-copy").textContent = data.is_demo ? "Simulated behavior stream active" : data.monitoring_status === "online" ? "API and database connected" : "Monitoring unavailable";
     document.querySelector("#last-activity").textContent = data.latest_activity_at ? "Last activity " + formatDate(data.latest_activity_at) : "No recorded activity";
-    document.querySelector("#api-state").textContent = data.monitoring_status.toUpperCase();
-    document.querySelector("#api-state").className = "status-pill " + (data.monitoring_status === "online" ? "is-online" : "is-offline");
+    document.querySelector("#api-state").textContent = data.is_demo ? "SIMULATED" : data.monitoring_status.toUpperCase();
+    document.querySelector("#api-state").className = "status-pill " + (data.is_demo ? "is-review" : data.monitoring_status === "online" ? "is-online" : "is-offline");
     const responses = data.response_distribution || {};
     document.querySelector("#decision-allow-count").textContent = responses.allow || 0;
     document.querySelector("#decision-review-count").textContent = responses.delay || 0;
@@ -680,15 +707,15 @@
   }
 
   function guidedRiskLevel(score) {
-    return score < 30 ? "low" : score < 70 ? "medium" : "high";
+    return score < 40 ? "low" : score < 70 ? "medium" : "high";
   }
 
   function guidedRiskStatus(score) {
-    return score < 30 ? "NORMAL" : score < 70 ? "SUSPICIOUS" : "HIGH RISK";
+    return score < 40 ? "LOW RISK" : score < 70 ? "MEDIUM RISK" : "HIGH RISK";
   }
 
   function guidedDecision(score) {
-    return score < 30 ? "ALLOW" : score < 70 ? "REVIEW" : "BLOCK";
+    return score < 40 ? "ALLOW" : score < 70 ? "CHALLENGE" : "BLOCK";
   }
 
   function guidedScore(scenario) {
@@ -701,9 +728,9 @@
     return "MEDIUM RISK · " + scenario.explanation;
   }
 
-  function renderGuidedPreview(mode) {
+  function renderGuidedPreview(mode, liveScore) {
     const scenario = guidedDemoScenarios[mode];
-    const score = guidedScore(scenario);
+    const score = Number.isFinite(liveScore) ? liveScore : guidedScore(scenario);
     const level = guidedRiskLevel(score);
     const action = guidedDecision(score);
     guidedModeButtons.forEach(function (button) {
@@ -736,8 +763,12 @@
       element.classList.toggle("is-selected", element.dataset.guidedAction === action);
     });
     runGuidedAnalysisButton.disabled = false;
-    guidedAnalysisStatus.textContent = "Scenario preview ready · run analysis to add it to demo data.";
-    guidedTimeline.innerHTML = '<li>Run Analysis to generate this scenario\'s simulated timeline.</li>';
+    guidedAnalysisStatus.textContent = "Live simulated profile · risk and decisions update automatically.";
+    if (liveDemoState && liveDemoState.events.length) {
+      renderGuidedTimeline(liveDemoState.events.slice(0, 8).map(function (event) {
+        return { time: event.time, message: event.description };
+      }));
+    }
     document.querySelectorAll("[data-flow-stage]").forEach(function (stage) {
       stage.classList.remove("is-current", "is-complete");
     });
@@ -799,6 +830,211 @@
       : '<p class="detail-empty">No demo sessions have been run.</p>';
   }
 
+  function randomInteger(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function demoRiskScore(mode) {
+    if (mode === "normal_user") return randomInteger(10, 25);
+    if (mode === "automated_bot") return randomInteger(75, 95);
+    return randomInteger(35, 80);
+  }
+
+  function demoDecision(score) {
+    if (score >= 70) return "block";
+    if (score >= 40) return Math.random() > 0.5 ? "challenge" : "delay";
+    return "allow";
+  }
+
+  function demoModeLabel(mode) {
+    return mode === "normal_user" ? "Normal User" : mode === "automated_bot" ? "Automated Bot" : "Adaptive Bot";
+  }
+
+  function makeDemoTimelineEvent(mode, score, sessionId) {
+    const action = demoDecision(score);
+    const behavior = mode === "normal_user" ? "Natural browsing pattern" : mode === "automated_bot"
+      ? "Rapid repeated requests detected" : "Behavior changed during the session";
+    const decisionText = action === "allow" ? "Firewall allowed request" : action === "block"
+      ? "Firewall blocked session" : action === "challenge" ? "Firewall challenged session" : "Firewall sent session to review";
+    return {
+      time: new Date().toISOString(),
+      session_id: sessionId,
+      event_type: action === "allow" ? "firewall.allow" : action === "block" ? "firewall.block" : "firewall.challenge",
+      description: behavior + " · risk " + score + "/100 · " + decisionText.toLowerCase(),
+    };
+  }
+
+  function makeDemoSession(mode, score, sessionId) {
+    const level = guidedRiskLevel(score);
+    const action = demoDecision(score);
+    const repeated = mode === "normal_user" ? randomInteger(0, 2) : mode === "automated_bot" ? randomInteger(18, 36) : randomInteger(4, 15);
+    const requestRate = mode === "normal_user" ? randomInteger(12, 28) : mode === "automated_bot" ? randomInteger(130, 190) : randomInteger(35, 105);
+    const pattern = mode === "normal_user" ? "natural browsing" : mode === "automated_bot" ? "automated repetition" : "adaptive behavior";
+    const startedAt = new Date(Date.now() - randomInteger(0, 55) * 60000).toISOString();
+    const signals = mode === "normal_user"
+      ? [{ name: "Routine browsing", points: 8, observation: "Varied navigation and natural pauses." }]
+      : mode === "automated_bot"
+        ? [{ name: "High request frequency", points: 24, observation: "A concentrated request burst in the demo profile." }, { name: "Repeated actions", points: 24, observation: "The same action is repeated rapidly." }]
+        : [{ name: "Changing behavior", points: 18, observation: "Timing and request cadence shift during the session." }, { name: "Unusual navigation", points: 14, observation: "Routes vary while transitions recur." }];
+    const response = action === "delay" ? "delay" : action;
+    const details = {
+      session_id: sessionId,
+      started_at: startedAt,
+      last_seen_at: new Date().toISOString(),
+      risk_score: score,
+      risk_level: level,
+      estimated_behavior_category: pattern,
+      simulation_mode: "local_demo",
+      features: { click_count: repeated + randomInteger(1, 8), average_inter_click_ms: mode === "automated_bot" ? 376 : randomInteger(700, 2600), page_visit_count: randomInteger(2, 10), page_time_ms: randomInteger(30000, 300000), form_submission_count: 0, repeated_action_count: repeated, request_count: requestRate, request_frequency_per_minute: requestRate, session_duration_ms: randomInteger(30000, 300000) },
+      behavioral_factors: {
+        request_frequency: { level: mode === "normal_user" ? "low" : mode === "automated_bot" ? "high" : "medium", observation: mode === "normal_user" ? "Request rate is within the demo's routine range." : "Request activity matches the selected simulated profile." },
+        action_repetition: { level: mode === "normal_user" ? "low" : mode === "automated_bot" ? "high" : "medium", observation: "Action repetition is generated from the selected demo profile." },
+        timing_variation: { status: mode === "automated_bot" ? "abnormal" : "normal", observation: "Timing is simulated and is not collected from a real visitor." },
+        navigation_pattern: { status: mode === "normal_user" ? "normal" : "abnormal", observation: "Navigation pattern is generated from the selected demo profile." },
+      },
+      rule_signals: signals,
+      explanation: mode === "normal_user" ? "Low request frequency and varied navigation match normal demo browsing." : mode === "automated_bot" ? "High request frequency, repeated actions, and regular timing produce a high-risk demo score." : "Variable timing and changing navigation reduce certainty, while recurring signals keep the session under review.",
+      recommended_action: response,
+      actual_response: response,
+      enforcement_status: "simulated only",
+      decision_history: [{ request_id: sessionId, created_at: new Date().toISOString(), decision_source: "local demo", recommended_action: response, actual_response: response, reason: "Preset scenario outcome; no real traffic was evaluated." }],
+      behavior_timeline: [{ time: startedAt, event_type: "session.start", description: "Simulated " + demoModeLabel(mode) + " session started." }, { time: new Date().toISOString(), event_type: "risk.updated", description: "Risk score updated to " + score + "/100; firewall decision: " + response + "." }],
+    };
+    liveDemoSessionRecords[sessionId] = details;
+    return Object.assign({}, details, {
+      click_count: details.features.click_count,
+      request_frequency_per_minute: requestRate,
+      response: response,
+      started_at: startedAt,
+    });
+  }
+
+  function createLiveDemoState() {
+    const modes = Object.keys(guidedDemoScenarios);
+    liveDemoMode = modes[randomInteger(0, modes.length - 1)];
+    const score = demoRiskScore(liveDemoMode);
+    const now = Date.now();
+    const sessionId = createGuidedSessionId();
+    const state = {
+      totalSessions: randomInteger(160, 420),
+      activeUsers: randomInteger(18, 42),
+      requestsAnalyzed: randomInteger(1800, 8200),
+      currentRisk: score,
+      riskHistory: [],
+      activityHistory: [],
+      threatHistory: [],
+      events: [],
+      recentSessions: [],
+      currentSessionId: sessionId,
+    };
+    for (let index = 17; index >= 0; index -= 1) {
+      const timestamp = new Date(now - index * 5000).toISOString();
+      state.riskHistory.push({ time: timestamp, risk_score: index === 0 ? score : demoRiskScore(liveDemoMode) });
+      state.activityHistory.push({ time: timestamp, value: randomInteger(38, 180) });
+      state.threatHistory.push({ time: timestamp, value: randomInteger(2, 24) });
+    }
+    state.events = [
+      { time: new Date(now - 18000).toISOString(), session_id: sessionId, event_type: "session.start", description: "Session started · " + demoModeLabel(liveDemoMode) + " · DEMO" },
+      { time: new Date(now - 12000).toISOString(), session_id: sessionId, event_type: "behavior.signal", description: "Behavior signal detected · " + guidedDemoScenarios[liveDemoMode].signals[0].name },
+      { time: new Date(now - 6000).toISOString(), session_id: sessionId, event_type: "risk.updated", description: "Risk score updated · " + score + "/100" },
+      makeDemoTimelineEvent(liveDemoMode, score, sessionId),
+    ];
+    return state;
+  }
+
+  function renderLiveDemo() {
+    const total = liveDemoState.totalSessions;
+    const flagged = Math.round(total * (liveDemoMode === "normal_user" ? 0.18 : liveDemoMode === "automated_bot" ? 0.34 : 0.27));
+    const blocked = Math.round(flagged * (liveDemoMode === "automated_bot" ? 0.58 : 0.3));
+    const suspicious = flagged - blocked;
+    const normal = total - flagged;
+    const averageRisk = Math.round((normal * 19 + suspicious * 54 + blocked * 84) / total);
+    const sessionModes = ["normal_user", "automated_bot", "adaptive_bot"];
+    liveDemoSessionRecords = {};
+    const sessions = Array.from({ length: 24 }, function (_, index) {
+      const mode = index === 0 ? liveDemoMode : sessionModes[randomInteger(0, sessionModes.length - 1)];
+      const score = index === 0 ? liveDemoState.currentRisk : demoRiskScore(mode);
+      return makeDemoSession(mode, score, index === 0 ? liveDemoState.currentSessionId : createGuidedSessionId());
+    });
+    const events = liveDemoState.events.slice(0, 12);
+    const eventSession = sessions[0] && sessions[0].session_id;
+    const data = {
+      is_demo: true,
+      total_sessions: total,
+      active_sessions: liveDemoState.activeUsers,
+      normal_sessions: normal,
+      suspicious_sessions: suspicious,
+      blocked_sessions: blocked,
+      average_risk_score: averageRisk,
+      threats_detected: flagged,
+      requests_analyzed: liveDemoState.requestsAnalyzed,
+      monitoring_status: "demo",
+      latest_activity_at: new Date().toISOString(),
+      response_distribution: { allow: normal, challenge: Math.ceil(suspicious / 2), delay: Math.floor(suspicious / 2), block: blocked, not_analyzed: 0 },
+      risk_distribution: { normal: normal, suspicious: suspicious, blocked: blocked },
+      model_status: { loaded: false, model_type: "Preset scenario simulator", training_dataset_type: "Local demo profiles", last_training_status: "SIMULATED", evaluation_metrics: null, metrics_note: "Preset scenario scores are illustrative and are not model predictions or real-world accuracy claims." },
+      sessions: sessions,
+      recent_events: events,
+      risk_history: liveDemoState.riskHistory,
+      activity_history: liveDemoState.activityHistory,
+      threat_history: liveDemoState.threatHistory,
+      total_sessions: total,
+    };
+    if (eventSession && events.length) events.forEach(function (event) { event.session_id = eventSession; });
+    render(data);
+  }
+
+  function tickLiveDemo(advance) {
+    if (!liveDemoState) return;
+    if (advance !== false) {
+      const score = demoRiskScore(liveDemoMode);
+      liveDemoState.currentRisk = score;
+      liveDemoState.totalSessions += randomInteger(0, 2);
+      liveDemoState.activeUsers = Math.max(10, Math.min(50, liveDemoState.activeUsers + randomInteger(-2, 2)));
+      liveDemoState.requestsAnalyzed += randomInteger(35, 145);
+      liveDemoState.currentSessionId = createGuidedSessionId();
+      const event = makeDemoTimelineEvent(liveDemoMode, score, liveDemoState.currentSessionId);
+      liveDemoState.events.unshift(event);
+      liveDemoState.events.unshift({ time: new Date().toISOString(), session_id: liveDemoState.currentSessionId, event_type: "risk.updated", description: "Risk score updated · " + score + "/100 · " + demoModeLabel(liveDemoMode) });
+      liveDemoState.events = liveDemoState.events.slice(0, 12);
+      const timestamp = new Date().toISOString();
+      liveDemoState.riskHistory.push({ time: timestamp, risk_score: score });
+      liveDemoState.activityHistory.push({ time: timestamp, value: randomInteger(42, liveDemoMode === "automated_bot" ? 240 : 155) });
+      liveDemoState.threatHistory.push({ time: timestamp, value: liveDemoMode === "normal_user" ? randomInteger(0, 5) : randomInteger(4, 30) });
+      [liveDemoState.riskHistory, liveDemoState.activityHistory, liveDemoState.threatHistory].forEach(function (series) {
+        if (series.length > 20) series.shift();
+      });
+    }
+    if (guidedDemoMode === liveDemoMode) renderGuidedPreview(liveDemoMode, liveDemoState.currentRisk);
+    renderLiveDemo();
+  }
+
+  function resetLiveDemo() {
+    liveDemoState = createLiveDemoState();
+    guidedDemoMode = liveDemoMode;
+    guidedDemoSessionId = liveDemoState.currentSessionId;
+    guidedDemoRuns = ["normal_user", "automated_bot", "adaptive_bot"].map(function (mode) {
+      const scenario = guidedDemoScenarios[mode];
+      const score = guidedScore(scenario);
+      const action = guidedDecision(score);
+      return { mode: mode, modeLabel: scenario.title, sessionId: createGuidedSessionId(), score: score, riskLevel: guidedRiskLevel(score), status: guidedRiskStatus(score), action: action, explanation: scenario.explanation, completedAt: new Date().toISOString(), timeline: [{ time: new Date().toLocaleTimeString(), message: "Seeded local demo scenario · " + action }] };
+    });
+    guidedModeButtons.forEach(function (button) {
+      const selected = button.dataset.guidedMode === liveDemoMode;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+    renderGuidedPreview(liveDemoMode, liveDemoState.currentRisk);
+    renderGuidedDashboard();
+    tickLiveDemo(false);
+  }
+
+  function startLiveDemo() {
+    resetLiveDemo();
+    if (liveDemoTimer) window.clearInterval(liveDemoTimer);
+    liveDemoTimer = window.setInterval(function () { tickLiveDemo(true); }, 3000);
+  }
+
   async function runGuidedAnalysis() {
     if (!guidedDemoMode) return;
     const token = ++guidedDemoToken;
@@ -824,7 +1060,10 @@
         });
         const event = {
           time: new Date(now + stageIndex * 1000).toLocaleTimeString(),
-          message: scenario.timeline[stageIndex],
+          message: scenario.timeline[stageIndex]
+            .replace(/Risk score calculated: \d+\/100/, "Risk score calculated: " + score + "/100")
+            .replace(/threshold selects (ALLOW|REVIEW|BLOCK)/, "threshold selects " + action)
+            .replace(/Final decision: (ALLOW|REVIEW|BLOCK)/, "Final decision: " + action),
         };
         timeline.push(event);
         renderGuidedTimeline(timeline);
@@ -861,41 +1100,30 @@
     button.addEventListener("click", function () {
       if (button.disabled) return;
       guidedDemoMode = button.dataset.guidedMode;
+      liveDemoMode = guidedDemoMode;
       guidedDemoSessionId = createGuidedSessionId();
-      renderGuidedPreview(guidedDemoMode);
+      liveDemoState.currentSessionId = guidedDemoSessionId;
+      liveDemoState.currentRisk = demoRiskScore(liveDemoMode);
+      renderGuidedPreview(guidedDemoMode, liveDemoState.currentRisk);
+      tickLiveDemo(false);
     });
   });
   runGuidedAnalysisButton.addEventListener("click", runGuidedAnalysis);
   resetGuidedDemoButton.addEventListener("click", function () {
     guidedDemoToken += 1;
-    guidedDemoMode = null;
-    guidedDemoSessionId = null;
-    guidedDemoRuns = [];
-    guidedModeButtons.forEach(function (button) {
-      button.disabled = false;
-      button.classList.remove("is-selected");
-      button.setAttribute("aria-pressed", "false");
-    });
-    runGuidedAnalysisButton.disabled = true;
-    guidedAnalysisOutput.innerHTML = '<p class="detail-empty">Scenario signals, risk score, and explanation will appear here.</p>';
-    document.querySelector("#guided-analysis-title").textContent = "Select a behavior mode";
-    document.querySelector("#guided-session-label").textContent = "DEMO PROFILE";
-    document.querySelector("#guided-decision-title").textContent = "Awaiting scenario";
-    document.querySelector("#guided-decision-score").innerHTML = '--<small>/100</small>';
-    document.querySelector("#guided-decision-level").textContent = "NO SCENARIO";
-    document.querySelector("#guided-decision-level").className = "status-pill";
-    document.querySelector("#guided-action-display").textContent = "SELECT A MODE";
-    document.querySelector("#guided-action-display").className = "guided-action-display";
-    document.querySelector("#guided-decision-reason").textContent = "The selected demo outcome will appear here.";
-    document.querySelectorAll("[data-guided-action]").forEach(function (element) { element.classList.remove("is-selected"); });
-    document.querySelectorAll("[data-flow-stage]").forEach(function (stage) { stage.classList.remove("is-current", "is-complete"); });
-    guidedAnalysisStatus.textContent = "Demo reset · choose a scenario to begin again.";
-    renderGuidedTimeline([]);
-    renderGuidedDashboard();
+    guidedModeButtons.forEach(function (button) { button.disabled = false; });
+    runGuidedAnalysisButton.disabled = false;
+    guidedAnalysisStatus.textContent = "Demo reset · fresh simulated data initialized.";
+    resetLiveDemo();
   });
   renderGuidedDashboard();
 
   async function refreshDashboard() {
+    if (liveDemoState) {
+      tickLiveDemo(true);
+      refreshOpenBehaviorAnalysis();
+      return;
+    }
     if (busy) return;
     busy = true;
     refreshButton.disabled = true;
@@ -920,7 +1148,7 @@
     if (refreshTimer) window.clearInterval(refreshTimer);
     refreshTimer = null;
     try { localStorage.setItem("abf.dashboard.refresh", value); } catch (_) { /* Keep this tab usable without storage. */ }
-    if (value !== "0") refreshTimer = window.setInterval(refreshDashboard, Number(value) * 1000);
+    if (value !== "0") refreshTimer = window.setInterval(function () { tickLiveDemo(true); }, Number(value) * 1000);
     document.querySelector("#refresh-state").textContent = value === "0" ? "Auto refresh off" : "Auto refresh every " + value + "s";
   }
 
@@ -1073,6 +1301,10 @@
     activeSessionId = sessionId;
     detailContent.innerHTML = '<div class="loading-state">Loading stored session details…</div>';
     if (typeof detailDialog.showModal === "function") detailDialog.showModal();
+    if (liveDemoSessionRecords[sessionId]) {
+      renderDetails(liveDemoSessionRecords[sessionId]);
+      return;
+    }
     try {
       let details = await apiRequest("/dashboard/sessions/" + encodeURIComponent(sessionId));
       const isPublicId = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sessionId);
@@ -1155,6 +1387,6 @@
     if (["10", "15", "30", "60", "0"].includes(savedInterval)) refreshSelect.value = savedInterval;
   } catch (_) { /* Default interval remains available. */ }
   setRefreshInterval(refreshSelect.value);
-  refreshDashboard();
+  startLiveDemo();
   if (window.lucide) window.lucide.createIcons();
 })();
